@@ -1,0 +1,19 @@
+{
+  "name": "discord-music-bot",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "node lib/main.js",
+    "build": "tsc",
+    "s": "npm run build && npm run start"
+  },
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "sponsorblock-api": "^0.2.2",
+    "youtube-dl-exec": "^1.2.6",
+    "youtube-search": "^1.1.6"
+  },
+  "devDependencies": {
+    "typescript": "^4.4.3"
+  }
+}
