@@ -13,6 +13,7 @@ export class Player {
     public connection: VoiceConnection | undefined;
     public audioPlayer: AudioPlayer | undefined;
     public queue: DownloadData[] = [];
+
     public isPlaying: boolean = false;
 
     public constructor(private _downloader: IDownloader) {
@@ -74,7 +75,7 @@ export class Player {
             this.isPlaying = false;
 
             const nextResource = this.getNextResource();
-            if (nextResource)
+            if (nextResource) 
                 this.audioPlayer!.play(nextResource);
         });
     }
@@ -107,4 +108,11 @@ export class Player {
         };
     }
 
+    public skip(): void {
+        this.audioPlayer?.stop();
+    }
+
+    public getQueue(): DownloadData[] {
+        return this.queue;
+    }
 }
