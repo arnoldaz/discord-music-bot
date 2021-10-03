@@ -1,15 +1,13 @@
-import { createAudioPlayer, createAudioResource, joinVoiceChannel } from "@discordjs/voice";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction, GuildMember } from "discord.js";
-
 import { BaseCommand } from "./baseCommand";
-import { YoutubeDownloader } from "../youtubeDownloader";
 import { Logger } from "../logger";
+import { Player } from "../player";
 
 export class PlayCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 
-    public constructor(private _downloader: YoutubeDownloader) {
+    public constructor(private _player: Player) {
         super();
 
         this.data = new SlashCommandBuilder()
@@ -35,21 +33,13 @@ export class PlayCommand extends BaseCommand {
         if (!voiceChannel) {
             Logger.log("User not in voice channel");
             return;
-        }
+        } 
 
-        const connection = joinVoiceChannel({
-            channelId: voiceChannel.id,
-            guildId: guildId,
-            adapterCreator: guild.voiceAdapterCreator,
-        });
-        const player = createAudioPlayer();
+        const data = await this._player.play(voiceChannel, query);
 
-        const downloadData = await this._downloader.download(query);
-        const resource = createAudioResource(downloadData.data);
-        
-        player.play(resource);
-        connection.subscribe(player);
-
-        await interaction.editReply(`Now playing: \`${downloadData.title}\` (\`${downloadData.formattedDuration}\`)`);
+        await interaction.editReply(
+            (data.playNow ? "Now playing: " : "Queued: ") +
+            `\`${data.title}\` (\`${data.formattedDuration}\`)`
+        );
     }
 }

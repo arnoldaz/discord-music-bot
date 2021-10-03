@@ -5,15 +5,16 @@ import { BaseCommand } from "./commands/baseCommand";
 import { PlayCommand } from "./commands/play";
 import { registerCommands } from "./register";
 import { YoutubeDownloader } from "./youtubeDownloader";
+import { Player } from "./player";
 
 dotenv.config();
 
 (async () => {
-    const logger = new Logger();
     const downloader = new YoutubeDownloader();
+    const player = new Player(downloader);
 
     const supportedCommands: BaseCommand[] = [
-        new PlayCommand(downloader),
+        new PlayCommand(player),
     ];
 
     if (process.argv.slice(2).some(arg => arg.includes("register"))) {

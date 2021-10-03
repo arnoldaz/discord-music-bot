@@ -17,6 +17,7 @@ export class YoutubeDownloader implements IDownloader {
         quality: "highestaudio",
         filter: "audioonly",
         dlChunkSize: 0,
+        highWaterMark: 1 << 25,
     };
 
     public async download(query: string): Promise<DownloadData> {
