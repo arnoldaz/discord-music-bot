@@ -4,6 +4,7 @@ import {
     AudioPlayerStatus,
     createAudioPlayer,
     createAudioResource,
+    DiscordGatewayAdapterCreator,
     entersState,
     joinVoiceChannel,
     VoiceConnection,
@@ -31,7 +32,7 @@ export class Player {
 
     public async connect(voiceChannel: VoiceChannel | StageChannel): Promise<void> {
         if (this._isConnected) {
-            Logger.logError(`Player is already connected to voice channel "${voiceChannel.name}""`);
+            Logger.logError(`Player is already connected to voice channel "${voiceChannel.name}".`);
             return;
         }
 
@@ -48,6 +49,7 @@ export class Player {
         }
 
         this._connection.destroy();
+        this._isConnected = false;
     }
 
     public async play(voiceChannel: VoiceChannel | StageChannel, query: string): Promise<PlayData> {
@@ -56,6 +58,8 @@ export class Player {
 
         const downloadData = await this._downloader.download(query);
         const playNow = !this._isPlaying;
+
+        Logger.logInfo(`Play now: ${playNow}`);
 
         if (playNow)
             this.playNow(downloadData);
@@ -71,6 +75,14 @@ export class Player {
 
     public skip(): void {
         this._audioPlayer.stop();
+    }
+
+    public pause(): void {
+        this._audioPlayer.pause();
+    }
+
+    public resume(): void {
+        this._audioPlayer.unpause();
     }
 
     public getCurrentlyPlaying(): DownloadData | null {
@@ -128,7 +140,7 @@ export class Player {
         const connection = joinVoiceChannel({
             guildId: channel.guild.id,
             channelId: channel.id,
-            adapterCreator: channel.guild.voiceAdapterCreator
+            adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator
         });
 
         try {
