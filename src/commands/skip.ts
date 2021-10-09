@@ -9,8 +9,8 @@ import { Logger } from "../logger";
 export class SkipCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 
-    public constructor(private _player: Player) {
-        super();
+    public constructor(player: Player) {
+        super(player);
 
         this.data = new SlashCommandBuilder()
             .setName("skip")
@@ -20,16 +20,14 @@ export class SkipCommand extends BaseCommand {
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
 
-        const member = interaction.member! as GuildMember;
-        const voiceChannel = member.voice.channel;
+        const voiceChannel = this.getVoiceChannel(interaction);
 
         if (!voiceChannel) {
-            Logger.log("User not in voice channel");
+            Logger.logInfo("User not in voice channel");
             return;
         } 
 
         this._player.skip();
-
         await interaction.editReply("Skipped current song.");
     }
 }

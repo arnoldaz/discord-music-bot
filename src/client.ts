@@ -15,7 +15,7 @@ export class DiscordClient{
         );
 
         this._client.on("ready", () => {
-            Logger.log("Bot is ready.");
+            Logger.logInfo("Bot is ready.");
         });
 
         this._client.on("interactionCreate", async (interaction: Interaction) => {
@@ -29,7 +29,7 @@ export class DiscordClient{
             try {
                 await command.execute(interaction);
             } catch (error) {
-                Logger.log(`Command execution error: ${error}`);
+                Logger.logInfo(`Command execution error: ${error}`);
                 await interaction.reply({ content: "Command execution error", ephemeral: true });
             }
         });

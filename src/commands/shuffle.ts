@@ -1,20 +1,18 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
-import { CommandInteraction, GuildMember } from "discord.js";
+import { CommandInteraction } from "discord.js";
 import { Logger } from "../logger";
 
-
-
-export class LeaveCommand extends BaseCommand {
+export class ShuffleCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 
     public constructor(player: Player) {
         super(player);
 
         this.data = new SlashCommandBuilder()
-            .setName("leave")
-            .setDescription("Leave voice channel.");
+            .setName("shuffle")
+            .setDescription("Shuffle queue.");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
@@ -27,8 +25,7 @@ export class LeaveCommand extends BaseCommand {
             return;
         } 
 
-        this._player.disconnect();
-
-        await interaction.editReply("Leaving.");
+        this._player.shuffleQueue();
+        await interaction.editReply("Queue shuffled.");
     }
 }

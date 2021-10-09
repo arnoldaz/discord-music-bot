@@ -9,6 +9,10 @@ import { Player } from "./player";
 import { LeaveCommand } from "./commands/leave";
 import { QueueCommand } from "./commands/queue";
 import { SkipCommand } from "./commands/skip";
+import { ClearCommand } from "./commands/clear";
+import { NowPlayingCommand } from "./commands/nowPlaying";
+import { RemoveCommand } from "./commands/remove";
+import { ShuffleCommand } from "./commands/shuffle";
 
 dotenv.config();
 
@@ -21,6 +25,10 @@ dotenv.config();
         new LeaveCommand(player),
         new QueueCommand(player),
         new SkipCommand(player),
+        new ClearCommand(player),
+        new NowPlayingCommand(player),
+        new RemoveCommand(player),
+        new ShuffleCommand(player),
     ];
 
     if (process.argv.slice(2).some(arg => arg.includes("register"))) {
@@ -29,6 +37,6 @@ dotenv.config();
     }
 
     const discordClient = new DiscordClient(supportedCommands);
-    discordClient.run().catch(error => Logger.log(error));
+    discordClient.run().catch(error => Logger.logInfo(error));
 })();
 

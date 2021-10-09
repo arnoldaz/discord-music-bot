@@ -7,8 +7,8 @@ import { Player } from "../player";
 export class PlayCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 
-    public constructor(private _player: Player) {
-        super();
+    public constructor(player: Player) {
+        super(player);
 
         this.data = new SlashCommandBuilder()
             .setName("play")
@@ -24,21 +24,17 @@ export class PlayCommand extends BaseCommand {
         await interaction.deferReply();
 
         const query = interaction.options.getString("query")!;
-
-        const guild = interaction.guild!;
-        const guildId = interaction.guildId!;
-        const member = interaction.member! as GuildMember;
-        const voiceChannel = member.voice.channel;
+        const voiceChannel = this.getVoiceChannel(interaction);
 
         if (!voiceChannel) {
-            Logger.log("User not in voice channel");
+            Logger.logInfo("User not in voice channel");
             return;
         } 
 
         const data = await this._player.play(voiceChannel, query);
 
         await interaction.editReply(
-            (data.playNow ? "Now playing: " : "Queued: ") +
+            (data.playingNow ? "Now playing: " : "Queued: ") +
             `\`${data.title}\` (\`${data.formattedDuration}\`)`
         );
     }

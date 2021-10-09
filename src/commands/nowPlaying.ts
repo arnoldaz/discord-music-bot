@@ -1,20 +1,18 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
-import { CommandInteraction, GuildMember } from "discord.js";
+import { CommandInteraction } from "discord.js";
 import { Logger } from "../logger";
 
-
-
-export class LeaveCommand extends BaseCommand {
+export class NowPlayingCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 
     public constructor(player: Player) {
         super(player);
 
         this.data = new SlashCommandBuilder()
-            .setName("leave")
-            .setDescription("Leave voice channel.");
+            .setName("np")
+            .setDescription("Currently playing song.");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
@@ -27,8 +25,11 @@ export class LeaveCommand extends BaseCommand {
             return;
         } 
 
-        this._player.disconnect();
-
-        await interaction.editReply("Leaving.");
+        const currentSong = this._player.getCurrentlyPlaying();
+        await interaction.editReply(
+            currentSong 
+                ? `Currently playing: \`${currentSong.title}\` (\`${currentSong.formattedDuration}\`)`
+                : "Nothing is currently playing."
+        );
     }
 }

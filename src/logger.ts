@@ -1,7 +1,19 @@
 
-
 export class Logger {
-    public static log(message: string): void {
-        console.log(`[${new Date().toLocaleString()}]: ${message}`);
+
+    private static get timestamp(): string {
+        return `[${new Date().toLocaleDateString("lt")}]`;
+    }
+
+    private static log(logLevel: string, message: string): void {
+        console.log(`${this.timestamp} ${logLevel}: ${message}`);
+    }
+
+    public static logInfo(message: string): void {
+        this.log("INFO", message);
+    }
+
+    public static logError(message: string): void {
+        this.log("ERROR", message);
     }
 }

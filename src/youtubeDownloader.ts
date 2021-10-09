@@ -22,7 +22,7 @@ export class YoutubeDownloader implements IDownloader {
 
     public async download(query: string): Promise<DownloadData> {
         const videoData = await this.getVideoData(query);
-        Logger.log(`Got video data: ${JSON.stringify(videoData)}`);
+        Logger.logInfo(`Got video data: ${JSON.stringify(videoData)}`);
 
         return {
             title: videoData.title,
@@ -51,7 +51,7 @@ export class YoutubeDownloader implements IDownloader {
     }
 
     private async getStream(videoId: string): Promise<Readable> {
-        Logger.log("Downloading stream...");
+        Logger.logInfo("Downloading stream...");
         return ytdl(`${this._videoPrefix}${videoId}`, this._downloadOptions);
     }
 }

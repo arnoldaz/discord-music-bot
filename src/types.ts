@@ -3,7 +3,7 @@ import { Readable } from "stream";
 export interface DownloadData {
     title: string;
     formattedDuration: string;
-    data: string | Readable;
+    data: Readable;
 }
 
 export interface IDownloader {

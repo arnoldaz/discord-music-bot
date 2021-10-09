@@ -18,8 +18,8 @@ export async function registerCommands(
 			{ body: commandsData },
 		);
 
-		Logger.log(`Successfully registered ${global ? "global" : "server"} commands.`)
+		Logger.logInfo(`Successfully registered ${global ? "global" : "server"} commands.`)
 	} catch (error) {
-		Logger.log(`Command registering failed: ${error}`);
+		Logger.logInfo(`Command registering failed: ${error}`);
 	}
 };
