@@ -1,12 +1,15 @@
 import { Readable } from "stream";
+import { AudioFilter } from "./transcoder";
 
-export interface DownloadData {
+export interface Song {
+    id: string;
     title: string;
     formattedDuration: string;
-    data: Readable;
+    filters?: AudioFilter[];
 }
 
 export interface IDownloader {
-    download(query: string): Promise<DownloadData>;
+    download(query: string): Promise<Song>;
+    getStream(videoId: string): Promise<Readable>;
 }
 

@@ -13,12 +13,14 @@ import { ClearCommand } from "./commands/clear";
 import { NowPlayingCommand } from "./commands/nowPlaying";
 import { RemoveCommand } from "./commands/remove";
 import { ShuffleCommand } from "./commands/shuffle";
+import { Transcoder } from "./transcoder";
 
 dotenv.config();
 
 (async () => {
     const downloader = new YoutubeDownloader();
-    const player = new Player(downloader);
+    const transcoder = new Transcoder();
+    const player = new Player(downloader, transcoder);
 
     const supportedCommands: BaseCommand[] = [
         new PlayCommand(player),

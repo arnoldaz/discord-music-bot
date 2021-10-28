@@ -3,13 +3,7 @@ import { Readable } from "stream";
 import { YouTube } from "youtube-sr";
 import ytdl from "ytdl-core";
 import { Logger } from "./logger";
-import { DownloadData, IDownloader } from "./types";
-
-interface ISearchResults {
-    id: string;
-    title: string;
-    formattedDuration: string;
-}
+import { IDownloader, Song } from "./types";
 
 export class YoutubeDownloader implements IDownloader {
     private readonly _videoPrefix: string = "https://www.youtube.com/watch?v=";
@@ -20,18 +14,31 @@ export class YoutubeDownloader implements IDownloader {
         highWaterMark: 1 << 25,
     };
 
-    public async download(query: string): Promise<DownloadData> {
+    public async download(query: string): Promise<Song> {
         const videoData = await this.getVideoData(query);
         Logger.logInfo(`Got video data: ${JSON.stringify(videoData)}`);
 
         return {
             title: videoData.title,
             formattedDuration: videoData.formattedDuration,
-            data: await this.getStream(videoData.id),
+            id: videoData.id,
         };
     }
 
-    private async getVideoData(query: string): Promise<ISearchResults> {
+    public async getStream(videoId: string): Promise<Readable> {
+        Logger.logInfo("Downloading stream...");
+
+        return ytdl(`${this._videoPrefix}${videoId}`, { 
+            ...this._downloadOptions,
+            requestOptions: {
+                headers: {
+                    cookie: process.env.YOUTUBE_COOKIE
+                }
+            }
+        });
+    }
+
+    private async getVideoData(query: string): Promise<Song> {
         const videoData = this.isUrl(query)
             ? await YouTube.getVideo(query)
             : await YouTube.searchOne(query); 
@@ -48,10 +55,5 @@ export class YoutubeDownloader implements IDownloader {
 
     private isUrl(query: string): boolean {
         return ytdl.validateURL(query);
-    }
-
-    private async getStream(videoId: string): Promise<Readable> {
-        Logger.logInfo("Downloading stream...");
-        return ytdl(`${this._videoPrefix}${videoId}`, this._downloadOptions);
     }
 }

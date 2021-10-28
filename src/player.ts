@@ -7,11 +7,13 @@ import {
     DiscordGatewayAdapterCreator,
     entersState,
     joinVoiceChannel,
+    StreamType,
     VoiceConnection,
     VoiceConnectionStatus,
 } from "@discordjs/voice";
 import { Logger } from "./logger";
-import { DownloadData, IDownloader } from "./types";
+import { IDownloader, Song } from "./types";
+import { AudioFilter, Transcoder } from "./transcoder";
 
 export interface PlayData {
     playingNow: boolean;
@@ -25,10 +27,10 @@ export class Player {
     private _audioPlayer!: AudioPlayer;
 
     private _isPlaying: boolean = false;
-    private _nowPlaying!: DownloadData;
-    private _queue: DownloadData[] = [];
+    private _nowPlaying!: Song;
+    private _queue: Song[] = [];
 
-    public constructor(private _downloader: IDownloader) { }
+    public constructor(private _downloader: IDownloader, private _transcoder: Transcoder) { }
 
     public async connect(voiceChannel: VoiceChannel | StageChannel): Promise<void> {
         if (this._isConnected) {
@@ -52,11 +54,12 @@ export class Player {
         this._isConnected = false;
     }
 
-    public async play(voiceChannel: VoiceChannel | StageChannel, query: string): Promise<PlayData> {
+    public async play(voiceChannel: VoiceChannel | StageChannel, query: string, modifications: AudioFilter[] = []): Promise<PlayData> {
         if (!this._isConnected)
             await this.connect(voiceChannel);
 
         const downloadData = await this._downloader.download(query);
+        downloadData.filters = modifications;
         const playNow = !this._isPlaying;
 
         Logger.logInfo(`Play now: ${playNow}`);
@@ -85,14 +88,14 @@ export class Player {
         this._audioPlayer.unpause();
     }
 
-    public getCurrentlyPlaying(): DownloadData | null {
+    public getCurrentlyPlaying(): Song | null {
         if (!this._isPlaying)
             return null;
 
         return this._nowPlaying;
     }
 
-    public getQueue(): DownloadData[] {
+    public getQueue(): Song[] {
         return this._queue;
     }
 
@@ -101,7 +104,6 @@ export class Player {
     }
 
     public clearQueue(): void {
-        this._queue.forEach(x => x.data.destroy());
         this._queue = [];
     }
 
@@ -109,13 +111,16 @@ export class Player {
         if (this._queue.length < index)
             return false;
 
-        this._queue[index - 1].data.destroy();
         this._queue.splice(index - 1, 1);
         return true;
     }
 
-    private playNow(downloadData: DownloadData) {
-        const resource = createAudioResource(downloadData.data);
+    private async playNow(downloadData: Song): Promise<void> {
+        const rawStream = await this._downloader.getStream(downloadData.id);
+        const stream = downloadData.filters
+            ? this._transcoder.applyFilters(rawStream, ...downloadData.filters)
+            : rawStream;
+        const resource = createAudioResource(stream, { inputType: StreamType.Opus });
         this._audioPlayer.play(resource);
 
         Logger.logInfo("Audio player is playing.");
@@ -123,11 +128,11 @@ export class Player {
         this._nowPlaying = downloadData;
     }
 
-    private addToQueue(downloadData: DownloadData) {
+    private addToQueue(downloadData: Song): void {
         this._queue.push(downloadData);
     }
 
-    private getNextSong(): DownloadData | null {
+    private getNextSong(): Song | null {
         if (this._queue.length == 0)
             return null;
 
