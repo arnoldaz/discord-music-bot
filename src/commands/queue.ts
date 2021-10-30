@@ -1,10 +1,7 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
-import { CommandInteraction } from "discord.js";
-import { Logger } from "../logger";
-
-
+import { CommandInteraction, Formatters } from "discord.js";
 
 export class QueueCommand extends BaseCommand {
     public data: SlashCommandBuilder;
@@ -20,17 +17,14 @@ export class QueueCommand extends BaseCommand {
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
 
-        const voiceChannel = this.getVoiceChannel(interaction);
-
-        if (!voiceChannel) {
-            Logger.logInfo("User not in voice channel");
-            return;
-        } 
-
         const queue = this._player.getQueue()
-            .map((x, i) => `${i+1}: \`${x.title}\` (\`${x.formattedDuration}\`)`)
+            .map((x, i) => `${i+1}: ${Formatters.inlineCode(x.title)} (${Formatters.inlineCode(x.formattedDuration)})`)
             .join("\n");
 
-        await interaction.editReply(`Current queue: \n` + queue);
+        await interaction.editReply(
+            queue 
+                ? `Current queue: \n` + queue 
+                : "Current queue is empty"
+        );
     }
 }

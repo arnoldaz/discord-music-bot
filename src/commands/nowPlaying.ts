@@ -2,7 +2,6 @@ import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
 import { CommandInteraction } from "discord.js";
-import { Logger } from "../logger";
 
 export class NowPlayingCommand extends BaseCommand {
     public data: SlashCommandBuilder;
@@ -17,14 +16,6 @@ export class NowPlayingCommand extends BaseCommand {
 
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
-
-        const voiceChannel = this.getVoiceChannel(interaction);
-
-        if (!voiceChannel) {
-            Logger.logInfo("User not in voice channel");
-            return;
-        } 
-
         const currentSong = this._player.getCurrentlyPlaying();
         await interaction.editReply(
             currentSong 

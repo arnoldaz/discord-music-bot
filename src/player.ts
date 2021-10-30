@@ -2,6 +2,7 @@ import { StageChannel, VoiceChannel } from "discord.js";
 import { 
     AudioPlayer,
     AudioPlayerStatus,
+    AudioResource,
     createAudioPlayer,
     createAudioResource,
     DiscordGatewayAdapterCreator,
@@ -14,6 +15,7 @@ import {
 import { Logger } from "./logger";
 import { IDownloader, Song } from "./types";
 import { AudioFilter, Transcoder } from "./transcoder";
+import { Readable } from "stream";
 
 export interface PlayData {
     playingNow: boolean;
@@ -23,8 +25,9 @@ export interface PlayData {
 
 export class Player {
     private _isConnected: boolean = false;
-    private _connection!: VoiceConnection;
-    private _audioPlayer!: AudioPlayer;
+    private _connectedChannel?: VoiceChannel | StageChannel;
+    private _connection?: VoiceConnection;
+    private _audioPlayer?: AudioPlayer;
 
     private _isPlaying: boolean = false;
     private _nowPlaying!: Song;
@@ -32,16 +35,27 @@ export class Player {
 
     public constructor(private _downloader: IDownloader, private _transcoder: Transcoder) { }
 
+    public get isConnected(): boolean {
+        return this._isConnected;
+    }
+
+    public get connectedChannel(): VoiceChannel | StageChannel | null {
+        return this._connectedChannel ?? null;
+    }
+
     public async connect(voiceChannel: VoiceChannel | StageChannel): Promise<void> {
-        if (this._isConnected) {
+        if (this._isConnected && this._connectedChannel?.id == voiceChannel.id) {
             Logger.logError(`Player is already connected to voice channel "${voiceChannel.name}".`);
             return;
         }
 
-        await this.joinChannel(voiceChannel);
-        this.createAudioPlayer();
+        if (!this._audioPlayer)
+            this._audioPlayer = this.createAudioPlayer();
+
+        this._connection = await this.joinChannel(voiceChannel);
         this._connection.subscribe(this._audioPlayer);
         this._isConnected = true;
+        this._connectedChannel = voiceChannel;
     }
 
     public disconnect(): void {
@@ -50,14 +64,13 @@ export class Player {
             return;
         }
 
-        this._connection.destroy();
+        this._connection?.destroy();
+        this._connection = undefined;
         this._isConnected = false;
+        this._connectedChannel = undefined;
     }
 
-    public async play(voiceChannel: VoiceChannel | StageChannel, query: string, modifications: AudioFilter[] = []): Promise<PlayData> {
-        if (!this._isConnected)
-            await this.connect(voiceChannel);
-
+    public async play(query: string, modifications: AudioFilter[] = []): Promise<PlayData> {
         const downloadData = await this._downloader.download(query);
         downloadData.filters = modifications;
         const playNow = !this._isPlaying;
@@ -77,15 +90,15 @@ export class Player {
     }
 
     public skip(): void {
-        this._audioPlayer.stop();
+        this._audioPlayer?.stop();
     }
 
     public pause(): void {
-        this._audioPlayer.pause();
+        this._audioPlayer?.pause();
     }
 
     public resume(): void {
-        this._audioPlayer.unpause();
+        this._audioPlayer?.unpause();
     }
 
     public getCurrentlyPlaying(): Song | null {
@@ -115,13 +128,23 @@ export class Player {
         return true;
     }
 
+    public playRadio() {
+        const stream = this._transcoder.getRadioStream("https://powerhit.ls.lv/PHR_AAC");
+        const resource = this.createAudioResource(stream);
+        this._audioPlayer!.play(resource);
+
+        Logger.logInfo("Audio player is playing radio.");
+        this._isPlaying = true;
+        this._nowPlaying = { id: "", title: "Power Hit Radio", formattedDuration: "Infinity" };
+    }
+
     private async playNow(downloadData: Song): Promise<void> {
         const rawStream = await this._downloader.getStream(downloadData.id);
         const stream = downloadData.filters
             ? this._transcoder.applyFilters(rawStream, ...downloadData.filters)
             : rawStream;
-        const resource = createAudioResource(stream, { inputType: StreamType.Opus });
-        this._audioPlayer.play(resource);
+        const resource = this.createAudioResource(stream);
+        this._audioPlayer!.play(resource);
 
         Logger.logInfo("Audio player is playing.");
         this._isPlaying = true;
@@ -139,27 +162,29 @@ export class Player {
         return this._queue.shift()!;
     }
 
-    private async joinChannel(channel: VoiceChannel | StageChannel): Promise<void> {
+    private async joinChannel(channel: VoiceChannel | StageChannel): Promise<VoiceConnection> {
         Logger.logInfo(`Joining voice channel: ${channel.name}`);
 
-        const connection = joinVoiceChannel({
+        let connection = joinVoiceChannel({
             guildId: channel.guild.id,
             channelId: channel.id,
             adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator
         });
 
         try {
-            this._connection = await entersState(connection, VoiceConnectionStatus.Ready, 20000);
+            connection = await entersState(connection, VoiceConnectionStatus.Ready, 20000);
         } catch (error) {
             Logger.logInfo(`Joining voice channel failed: ${error}`);
             connection.destroy();
         }
+
+        return connection;
     }
 
-    private createAudioPlayer(): void {
-        this._audioPlayer = createAudioPlayer();
+    private createAudioPlayer(): AudioPlayer {
+        const audioPlayer = createAudioPlayer();
 
-        this._audioPlayer.on(AudioPlayerStatus.Idle, () => {
+        audioPlayer.on(AudioPlayerStatus.Idle, () => {
             Logger.logInfo("Audio player is idle.");
             this._isPlaying = false;
 
@@ -167,5 +192,11 @@ export class Player {
             if (nextSong)
                 this.playNow(nextSong);
         });
+
+        return audioPlayer;
+    }
+
+    private createAudioResource(stream: Readable): AudioResource<null> {
+        return createAudioResource(stream, { inputType: StreamType.Opus });
     }
 }

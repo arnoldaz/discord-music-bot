@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { CommandInteraction } from "discord.js";
+import { CommandInteraction, Formatters } from "discord.js";
 import { BaseCommand } from "./baseCommand";
 import { Logger } from "../logger";
 import { Player } from "../player";
@@ -27,6 +27,9 @@ export class PlayCommand extends BaseCommand {
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
+        if (!await this.joinVoiceChannel(interaction))
+            return;
+
         await interaction.deferReply();
 
         // const embed = new MessageEmbed().setTitle('testing');
@@ -37,18 +40,11 @@ export class PlayCommand extends BaseCommand {
         const modification = interaction.options.getInteger("modification");
         Logger.logInfo(`Got modification: ${modification}`);
 
-        const voiceChannel = this.getVoiceChannel(interaction);
-
-        if (!voiceChannel) {
-            Logger.logInfo("User not in voice channel");
-            return;
-        } 
-
-        const data = await this._player.play(voiceChannel, query, modification ? [modification - 1 as AudioFilter] : []);
+        const data = await this._player.play(query, modification != null ? [modification as AudioFilter] : []);
 
         await interaction.editReply(
             (data.playingNow ? "Now playing: " : "Queued: ") +
-            `\`${data.title}\` (\`${data.formattedDuration}\`)`
+            `${Formatters.inlineCode(data.title)} (${Formatters.inlineCode(data.formattedDuration)})`
         );
     }
 }

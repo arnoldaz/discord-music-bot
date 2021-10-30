@@ -43,7 +43,30 @@ export class Transcoder {
         });
 
         const outputStream = outputFfmpeg.pipe(opus);
+        outputStream.on("close", () => {
+            transcoder.destroy();
+            opus.destroy();
+        });
 
+        return outputStream;
+    }
+
+    public getRadioStream(url: string): Readable {       
+        const transcoder = new FFmpeg({
+            args: [
+                "-i", url,
+                ...Transcoder._defaultFFmpegArgs,
+                "-ss", "00:00:00"
+            ]
+        });
+
+        const opus = new Opus.Encoder({
+            rate: 48000,
+            channels: 2,
+            frameSize: 960,
+        });
+
+        const outputStream = transcoder.pipe(opus);
         outputStream.on("close", () => {
             transcoder.destroy();
             opus.destroy();

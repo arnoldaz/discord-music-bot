@@ -1,10 +1,10 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
-import { CommandInteraction } from "discord.js";
-import { Logger } from "../logger";
+import { CommandInteraction, Formatters } from "discord.js";
 
 export class RemoveCommand extends BaseCommand {
+    private static _idOption: string = "id";
     public data: SlashCommandBuilder;
 
     public constructor(player: Player) {
@@ -14,7 +14,7 @@ export class RemoveCommand extends BaseCommand {
             .setName("remove")
             .setDescription("Removes song from queue.");
         this.data.addIntegerOption(option => option
-            .setName("id")
+            .setName(RemoveCommand._idOption)
             .setDescription("Id of song to remove from queue.")
             .setRequired(true)
         );
@@ -22,16 +22,8 @@ export class RemoveCommand extends BaseCommand {
 
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
-
-        const voiceChannel = this.getVoiceChannel(interaction);
-
-        if (!voiceChannel) {
-            Logger.logInfo("User not in voice channel");
-            return;
-        } 
-
-        const id = interaction.options.getInteger("id")!;
+        const id = interaction.options.getInteger(RemoveCommand._idOption)!;
         this._player.removeSong(id);
-        await interaction.editReply(`Queue item with ID \`${id.toString()}\` removed.`);
+        await interaction.editReply(`Queue item with ID ${Formatters.inlineCode(id.toString())} removed.`);
     }
 }
