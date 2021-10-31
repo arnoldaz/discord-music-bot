@@ -1,5 +1,5 @@
 import { StageChannel, VoiceChannel } from "discord.js";
-import { 
+import {
     AudioPlayer,
     AudioPlayerStatus,
     AudioResource,
@@ -24,16 +24,16 @@ export interface PlayData {
 }
 
 export class Player {
-    private _isConnected: boolean = false;
+    private _isConnected = false;
     private _connectedChannel?: VoiceChannel | StageChannel;
     private _connection?: VoiceConnection;
     private _audioPlayer?: AudioPlayer;
-    
-    private _isPlaying: boolean = false;
+
+    private _isPlaying = false;
     private _nowPlaying!: Song;
     private _queue: Song[] = [];
 
-    public constructor(private _downloader: IDownloader, private _transcoder: Transcoder) { }
+    public constructor(private _downloader: IDownloader, private _transcoder: Transcoder) {}
 
     public get isConnected(): boolean {
         return this._isConnected;
@@ -49,8 +49,7 @@ export class Player {
             return;
         }
 
-        if (!this._audioPlayer)
-            this._audioPlayer = this.createAudioPlayer();
+        if (!this._audioPlayer) this._audioPlayer = this.createAudioPlayer();
 
         this._connection = await this.joinChannel(voiceChannel);
         this._connection.subscribe(this._audioPlayer);
@@ -77,10 +76,8 @@ export class Player {
 
         Logger.logInfo(`Play now: ${playNow}`);
 
-        if (playNow)
-            this.playNow(downloadData);
-        else 
-            this.addToQueue(downloadData);
+        if (playNow) this.playNow(downloadData);
+        else this.addToQueue(downloadData);
 
         return {
             playingNow: playNow,
@@ -102,8 +99,7 @@ export class Player {
     }
 
     public getCurrentlyPlaying(): Song | null {
-        if (!this._isPlaying)
-            return null;
+        if (!this._isPlaying) return null;
 
         return this._nowPlaying;
     }
@@ -121,8 +117,7 @@ export class Player {
     }
 
     public removeSong(index: number): boolean {
-        if (this._queue.length < index)
-            return false;
+        if (this._queue.length < index) return false;
 
         this._queue.splice(index - 1, 1);
         return true;
@@ -156,8 +151,7 @@ export class Player {
     }
 
     private getNextSong(): Song | null {
-        if (this._queue.length == 0)
-            return null;
+        if (this._queue.length == 0) return null;
 
         return this._queue.shift()!;
     }
@@ -168,7 +162,7 @@ export class Player {
         let connection = joinVoiceChannel({
             guildId: channel.guild.id,
             channelId: channel.id,
-            adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator
+            adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
         });
 
         try {
@@ -189,8 +183,7 @@ export class Player {
             this._isPlaying = false;
 
             const nextSong = this.getNextSong();
-            if (nextSong)
-                this.playNow(nextSong);
+            if (nextSong) this.playNow(nextSong);
         });
 
         return audioPlayer;

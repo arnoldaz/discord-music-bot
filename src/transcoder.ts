@@ -9,13 +9,13 @@ export enum AudioFilter {
 }
 
 export class Transcoder {
-
     private static _availableFilters: { [filter in AudioFilter]: string } = {
         [AudioFilter.Nightcore]: "atempo=1.06,asetrate=48000*1.25",
         [AudioFilter.Earrape]: "channelsplit,sidechaingate=level_in=64",
         [AudioFilter.Audio8D]: "apulsator=hz=0.09",
     };
 
+    /* eslint-disable prettier/prettier */
     private static _defaultFFmpegArgs: string[] = [
         "-analyzeduration", "0",
         "-loglevel", "0",
@@ -23,6 +23,7 @@ export class Transcoder {
         "-ar", "48000",
         "-ac", "2",
     ];
+    /* eslint-enable prettier/prettier */
 
     public applyFilters(stream: Readable, ...filters: AudioFilter[]): Readable {
         const filterString = filters.map(x => Transcoder._availableFilters[x]).join(",");
@@ -51,13 +52,9 @@ export class Transcoder {
         return outputStream;
     }
 
-    public getRadioStream(url: string): Readable {       
+    public getRadioStream(url: string): Readable {
         const transcoder = new FFmpeg({
-            args: [
-                "-i", url,
-                ...Transcoder._defaultFFmpegArgs,
-                "-ss", "00:00:00"
-            ]
+            args: ["-i", url, ...Transcoder._defaultFFmpegArgs, "-ss", "00:00:00"],
         });
 
         const opus = new Opus.Encoder({
@@ -74,5 +71,4 @@ export class Transcoder {
 
         return outputStream;
     }
-
 }

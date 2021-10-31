@@ -5,7 +5,19 @@ import { Player } from "./player";
 import { registerCommands } from "./register";
 import { YoutubeDownloader } from "./downloader";
 import { Transcoder } from "./transcoder";
-import { BaseCommand, ClearCommand, JoinCommand, LeaveCommand, NowPlayingCommand, PlayCommand, QueueCommand, RadioCommand, RemoveCommand, ShuffleCommand, SkipCommand } from "./commands";
+import {
+    BaseCommand,
+    ClearCommand,
+    JoinCommand,
+    LeaveCommand,
+    NowPlayingCommand,
+    PlayCommand,
+    QueueCommand,
+    RadioCommand,
+    RemoveCommand,
+    ShuffleCommand,
+    SkipCommand,
+} from "./commands";
 
 dotenv.config();
 
@@ -35,4 +47,3 @@ dotenv.config();
     const discordClient = new DiscordClient(supportedCommands);
     discordClient.run().catch(error => Logger.logError(error));
 })();
-

@@ -1,6 +1,4 @@
-
 export class Logger {
-
     private static get timestamp(): string {
         return `[${new Date().toLocaleString("lt")}]`;
     }

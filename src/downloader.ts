@@ -1,4 +1,3 @@
-
 import { Readable } from "stream";
 import { YouTube } from "youtube-sr";
 import ytdl from "ytdl-core";
@@ -28,23 +27,20 @@ export class YoutubeDownloader implements IDownloader {
     public async getStream(videoId: string): Promise<Readable> {
         Logger.logInfo("Downloading stream...");
 
-        return ytdl(`${this._videoPrefix}${videoId}`, { 
+        return ytdl(`${this._videoPrefix}${videoId}`, {
             ...this._downloadOptions,
             requestOptions: {
                 headers: {
-                    cookie: process.env.YOUTUBE_COOKIE
-                }
-            }
+                    cookie: process.env.YOUTUBE_COOKIE,
+                },
+            },
         });
     }
 
     private async getVideoData(query: string): Promise<Song> {
-        const videoData = this.isUrl(query)
-            ? await YouTube.getVideo(query)
-            : await YouTube.searchOne(query); 
-        
-        if (!videoData || !videoData.id || !videoData.title)
-            throw `Incomplete video data: ${videoData}`;
+        const videoData = this.isUrl(query) ? await YouTube.getVideo(query) : await YouTube.searchOne(query);
+
+        if (!videoData || !videoData.id || !videoData.title) throw `Incomplete video data: ${videoData}`;
 
         return {
             id: videoData.id,

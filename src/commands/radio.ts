@@ -9,14 +9,11 @@ export class RadioCommand extends BaseCommand {
     public constructor(player: Player) {
         super(player);
 
-        this.data = new SlashCommandBuilder()
-            .setName("radio")
-            .setDescription("Play radio.");
+        this.data = new SlashCommandBuilder().setName("radio").setDescription("Play radio.");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
-        if (!await this.joinVoiceChannel(interaction))
-            return;
+        if (!(await this.joinVoiceChannel(interaction))) return;
 
         await interaction.deferReply();
         this._player.playRadio();

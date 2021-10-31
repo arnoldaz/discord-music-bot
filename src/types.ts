@@ -12,4 +12,3 @@ export interface IDownloader {
     download(query: string): Promise<Song>;
     getStream(videoId: string): Promise<Readable>;
 }
-

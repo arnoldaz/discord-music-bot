@@ -2,16 +2,18 @@ import { Client, Collection, Intents, Interaction } from "discord.js";
 import { BaseCommand } from "./commands/baseCommand";
 import { Logger } from "./logger";
 
-export class DiscordClient{
+export class DiscordClient {
     private _client: Client;
     private _commandsMap: Collection<string, BaseCommand>;
 
     public constructor(commands: BaseCommand[]) {
-        this._client = new Client({ intents: [ Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_VOICE_STATES ] });
+        this._client = new Client({
+            intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_VOICE_STATES],
+        });
         this._commandsMap = commands.reduce(
-            (collection: Collection<string, BaseCommand>, command: BaseCommand) => 
-                collection.set(command.data.name, command), 
-                new Collection<string, BaseCommand>()
+            (collection: Collection<string, BaseCommand>, command: BaseCommand) =>
+                collection.set(command.data.name, command),
+            new Collection<string, BaseCommand>()
         );
 
         this._client.on("ready", () => {
@@ -19,13 +21,11 @@ export class DiscordClient{
         });
 
         this._client.on("interactionCreate", async (interaction: Interaction) => {
-            if (!interaction.isCommand()) 
-                return;
-        
+            if (!interaction.isCommand()) return;
+
             const command = this._commandsMap.get(interaction.commandName);
-            if (!command) 
-                return;
-        
+            if (!command) return;
+
             try {
                 await command.execute(interaction);
             } catch (error) {

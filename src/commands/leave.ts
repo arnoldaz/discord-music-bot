@@ -9,9 +9,7 @@ export class LeaveCommand extends BaseCommand {
     public constructor(player: Player) {
         super(player);
 
-        this.data = new SlashCommandBuilder()
-            .setName("leave")
-            .setDescription("Leave voice channel.");
+        this.data = new SlashCommandBuilder().setName("leave").setDescription("Leave voice channel.");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
