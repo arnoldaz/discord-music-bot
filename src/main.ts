@@ -3,7 +3,7 @@ import { Logger } from "./logger";
 import { DiscordClient } from "./client";
 import { Player } from "./player";
 import { registerCommands } from "./register";
-import { YoutubeDownloader } from "./youtubeDownloader";
+import { YoutubeDownloader } from "./downloader";
 import { Transcoder } from "./transcoder";
 import { BaseCommand, ClearCommand, JoinCommand, LeaveCommand, NowPlayingCommand, PlayCommand, QueueCommand, RadioCommand, RemoveCommand, ShuffleCommand, SkipCommand } from "./commands";
 

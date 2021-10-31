@@ -28,7 +28,7 @@ export class Player {
     private _connectedChannel?: VoiceChannel | StageChannel;
     private _connection?: VoiceConnection;
     private _audioPlayer?: AudioPlayer;
-
+    
     private _isPlaying: boolean = false;
     private _nowPlaying!: Song;
     private _queue: Song[] = [];
