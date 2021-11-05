@@ -10,6 +10,7 @@ import {
     ClearCommand,
     JoinCommand,
     LeaveCommand,
+    LyricsCommand,
     NowPlayingCommand,
     PlayCommand,
     QueueCommand,
@@ -37,6 +38,7 @@ dotenv.config();
         new ShuffleCommand(player),
         new RadioCommand(player),
         new JoinCommand(player),
+        new LyricsCommand(player),
     ];
 
     if (process.argv.slice(2).some(arg => arg.includes("register"))) {

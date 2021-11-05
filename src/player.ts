@@ -16,6 +16,8 @@ import { Logger } from "./logger";
 import { IDownloader, Song } from "./types";
 import { AudioFilter, Transcoder } from "./transcoder";
 import { Readable } from "stream";
+import { ExtendedDataScraper } from "./newDownloader";
+import { LyricsScraper } from "./lyrics";
 
 export interface PlayData {
     playingNow: boolean;
@@ -87,7 +89,7 @@ export class Player {
     }
 
     public skip(): void {
-        this._audioPlayer?.stop();
+        this._audioPlayer?.stop(true);
     }
 
     public pause(): void {
@@ -123,7 +125,7 @@ export class Player {
         return true;
     }
 
-    public playRadio() {
+    public playRadio(): void {
         const stream = this._transcoder.getRadioStream("https://powerhit.ls.lv/PHR_AAC");
         const resource = this.createAudioResource(stream);
         this._audioPlayer!.play(resource);
@@ -131,6 +133,24 @@ export class Player {
         Logger.logInfo("Audio player is playing radio.");
         this._isPlaying = true;
         this._nowPlaying = { id: "", title: "Power Hit Radio", formattedDuration: "Infinity" };
+    }
+
+    public async getLyrics(): Promise<string | null> {
+        if (!this._isPlaying || !this._nowPlaying.id) return null;
+
+        const extendedData = await ExtendedDataScraper.getVideoData(this._nowPlaying.id);
+        Logger.logInfo(
+            `Extended data found for id "${this._nowPlaying.id}": ${JSON.stringify(extendedData.songMetadata)}`
+        );
+
+        const lyrics = await LyricsScraper.getLyrics(
+            this._nowPlaying.title,
+            extendedData.songMetadata?.artist,
+            extendedData.songMetadata?.song
+        );
+        Logger.logInfo(`Lyrics are ${lyrics ? "found" : "not found"}.`);
+
+        return lyrics;
     }
 
     private async playNow(downloadData: Song): Promise<void> {

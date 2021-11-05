@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Logger } from "./logger";
 
 export interface ThumbnailData {
     url: string;
@@ -31,7 +32,7 @@ export interface VideoData {
     songMetadata: SongMetadata;
 }
 
-export class RealDownlaoder {
+export class ExtendedDataScraper {
     private static _videoUrl = "https://www.youtube.com/watch?v=";
 
     public static async getVideoData(videoId: string): Promise<VideoData> {
@@ -45,9 +46,6 @@ export class RealDownlaoder {
         const playerData = JSON.parse(playerDataString);
 
         const videoDetails = playerData.videoDetails;
-        const metadata =
-            initialData.contents.twoColumnWatchNextResults.results.results.contents[1].videoSecondaryInfoRenderer
-                .metadataRowContainer.metadataRowContainerRenderer.rows;
 
         return {
             id: videoDetails.videoId,
@@ -66,18 +64,30 @@ export class RealDownlaoder {
             },
             live: videoDetails.isLiveContent,
             tags: videoDetails.keywords,
-            songMetadata: {
-                /* eslint-disable @typescript-eslint/no-explicit-any */
-                artist: metadata.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Artist")
-                    ?.metadataRowRenderer.contents[0].runs[0].text,
-                song: metadata.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Song")
-                    ?.metadataRowRenderer.contents[0].runs[0].text,
-                album: metadata.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Album")
-                    ?.metadataRowRenderer.contents[0].simpleText,
-                writers: metadata.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Writers")
-                    ?.metadataRowRenderer.contents[0].simpleText,
-                /* eslint-enable @typescript-eslint/no-explicit-any */
-            },
+            songMetadata: this.getSongMetadata(initialData),
         };
     }
+
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    private static getSongMetadata(initialData: any): SongMetadata {
+        const metadata =
+            initialData.contents.twoColumnWatchNextResults.results.results.contents[1].videoSecondaryInfoRenderer
+                .metadataRowContainer.metadataRowContainerRenderer.rows;
+
+        const artist = metadata?.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Artist");
+        const song = metadata?.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Song");
+        const album = metadata?.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Album");
+        const writers = metadata?.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Writers");
+
+        const simpleTextParser = (x: any) => x?.metadataRowRenderer.contents?.[0].simpleText;
+        const runsTextParser = (x: any) => x?.metadataRowRenderer.contents?.[0].runs?.[0].text;
+
+        return {
+            artist: simpleTextParser(artist) ?? runsTextParser(artist),
+            song: simpleTextParser(song) ?? runsTextParser(song),
+            album: simpleTextParser(album) ?? runsTextParser(album),
+            writers: simpleTextParser(writers) ?? runsTextParser(writers),
+        };
+    }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 }

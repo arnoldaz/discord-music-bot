@@ -29,8 +29,13 @@ export class DiscordClient {
             try {
                 await command.execute(interaction);
             } catch (error) {
-                Logger.logInfo(`Command execution error: ${error}`);
-                await interaction.reply({ content: "Command execution error", ephemeral: true });
+                const errorString = `Command execution error: ${error}`;
+                Logger.logError(errorString);
+
+                Logger.logInfo(`Interaction replied/deferred: ${interaction.replied}/${interaction.deferred}`);
+                if (interaction.replied || interaction.deferred)
+                    await interaction.followUp({ content: errorString, ephemeral: true });
+                else await interaction.reply({ content: errorString, ephemeral: true });
             }
         });
     }
