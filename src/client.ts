@@ -31,7 +31,7 @@ export class DiscordClient {
             } catch (error) {
                 const errorString = `Command execution error: ${error}`;
                 Logger.logError(errorString);
-
+                Logger.logError((error as Error).stack!);
                 Logger.logInfo(`Interaction replied/deferred: ${interaction.replied}/${interaction.deferred}`);
                 if (interaction.replied || interaction.deferred)
                     await interaction.followUp({ content: errorString, ephemeral: true });
