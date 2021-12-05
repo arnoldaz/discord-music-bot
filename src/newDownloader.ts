@@ -1,5 +1,4 @@
 import axios from "axios";
-import { Logger } from "./logger";
 
 export interface ThumbnailData {
     url: string;
