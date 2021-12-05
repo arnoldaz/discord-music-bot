@@ -1,5 +1,4 @@
 import axios from "axios";
-import { Logger } from "./logger";
 
 export class LyricsScraper {
     private static _searchUrl = "https://www.google.com/search?q=";
