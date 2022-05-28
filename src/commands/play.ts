@@ -1,9 +1,10 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { CommandInteraction, Formatters } from "discord.js";
+import { CommandInteraction, Formatters, MessageEmbed } from "discord.js";
 import { BaseCommand } from "./baseCommand";
 import { Logger } from "../logger";
 import { Player } from "../player";
 import { AudioFilter } from "../transcoder";
+import { ExtendedDataScraper } from "../newDownloader";
 
 export class PlayCommand extends BaseCommand {
     public data: SlashCommandBuilder;
@@ -32,9 +33,6 @@ export class PlayCommand extends BaseCommand {
 
         await interaction.deferReply();
 
-        // const embed = new MessageEmbed().setTitle('testing');
-        // const messageId = await interaction.reply({ embeds: [ embed ] });
-
         const query = interaction.options.getString("query")!;
 
         const modification = interaction.options.getInteger("modification");
@@ -42,9 +40,20 @@ export class PlayCommand extends BaseCommand {
 
         const data = await this._player.play(query, modification != null ? [modification as AudioFilter] : []);
 
-        await interaction.editReply(
-            (data.playingNow ? "Now playing: " : "Queued: ") +
-                `${Formatters.inlineCode(data.title)} (${Formatters.inlineCode(data.formattedDuration)})`
-        );
+
+        const song = this._player.getCurrentlyPlaying()!;
+        const extendedData = await ExtendedDataScraper.getVideoData(song.id);
+
+        const embed = new MessageEmbed()
+            .setTitle(data.playingNow ? "Now playing" : "Queued")
+            .setDescription(Formatters.inlineCode(data.title))
+            .setThumbnail(extendedData.thumbnail.url)
+            .addField("Duration", data.formattedDuration)
+
+        await interaction.editReply({
+            // content:  (data.playingNow ? "Now playing: " : "Queued: ") +
+            //     `${Formatters.inlineCode(data.title)} (${Formatters.inlineCode(data.formattedDuration)})`,
+            embeds: [embed],
+        });
     }
 }
