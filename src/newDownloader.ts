@@ -35,8 +35,8 @@ export class ExtendedDataScraper {
     private static _videoUrl = "https://www.youtube.com/watch?v=";
 
     public static async getVideoData(videoId: string): Promise<VideoData> {
-        const result = await axios.get(this._videoUrl + videoId, { headers: { "accept-language": "en-GB" } });
-        const data = result.data as string;
+        const result = await axios.get<string>(this._videoUrl + videoId, { headers: { "accept-language": "en-GB" } });
+        const data = result.data;
 
         const initialDataString = data.split("var ytInitialData = ")[1].split(";</script>")[0];
         const playerDataString = data.split("var ytInitialPlayerResponse = ")[1].split(";</script>")[0];

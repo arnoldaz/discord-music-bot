@@ -9,7 +9,9 @@ export class SkipCommand extends BaseCommand {
     public constructor(player: Player) {
         super(player);
 
-        this.data = new SlashCommandBuilder().setName("skip").setDescription("Skip current song");
+        this.data = new SlashCommandBuilder()
+            .setName("skip")
+            .setDescription("Skip current song");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {

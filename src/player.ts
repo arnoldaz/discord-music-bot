@@ -71,6 +71,15 @@ export class Player {
         this._connectedChannel = undefined;
     }
 
+    public async seek(seconds: number): Promise<void> {
+        if (!this._isPlaying) {
+            Logger.logError("Nothing is playing to seek.");
+            return;
+        }
+
+        this.playNow(this._nowPlaying, seconds);
+    }
+
     public async play(query: string, modifications: AudioFilter[] = []): Promise<PlayData> {
         const downloadData = await this._downloader.download(query);
         downloadData.filters = modifications;
@@ -78,8 +87,10 @@ export class Player {
 
         Logger.logInfo(`Play now: ${playNow}`);
 
-        if (playNow) this.playNow(downloadData);
-        else this.addToQueue(downloadData);
+        if (playNow) 
+            this.playNow(downloadData);
+        else 
+            this.addToQueue(downloadData);
 
         return {
             playingNow: playNow,
@@ -126,7 +137,9 @@ export class Player {
     }
 
     public playRadio(): void {
-        const stream = this._transcoder.getRadioStream("https://powerhit.ls.lv/PHR_AAC");
+        // const url = "https://stream.m-1.fm/m1/aacp64";
+        const url = "https://powerhit.ls.lv/PHR_AAC";
+        const stream = this._transcoder.getRadioStream(url);
         const resource = this.createAudioResource(stream);
         this._audioPlayer!.play(resource);
 
@@ -153,11 +166,15 @@ export class Player {
         return lyrics;
     }
 
-    private async playNow(downloadData: Song): Promise<void> {
+    private async playNow(downloadData: Song, startAtSeconds = 0): Promise<void> {
         const rawStream = await this._downloader.getStream(downloadData.id);
-        const stream = downloadData.filters
-            ? this._transcoder.applyFilters(rawStream, ...downloadData.filters)
-            : rawStream;
+        // const stream = this._transcoder.cutOut(rawStream);
+
+        // const stream = downloadData.filters
+        //     ? this._transcoder.applyFilters(rawStream, downloadData.filters)
+        //     : rawStream;
+
+        const stream = this._transcoder.applyFilters(rawStream, downloadData.filters, startAtSeconds);
         const resource = this.createAudioResource(stream);
         this._audioPlayer!.play(resource);
 
@@ -201,6 +218,7 @@ export class Player {
         audioPlayer.on(AudioPlayerStatus.Idle, () => {
             Logger.logInfo("Audio player is idle.");
             this._isPlaying = false;
+            this.skip();
 
             const nextSong = this.getNextSong();
             if (nextSong) this.playNow(nextSong);

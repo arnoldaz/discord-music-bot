@@ -13,18 +13,19 @@ export abstract class BaseCommand {
     }
 
     protected async joinVoiceChannel(interaction: CommandInteraction): Promise<boolean> {
-        if (!this._player.isConnected) {
-            const voiceChannel = this.getVoiceChannel(interaction);
-            if (!voiceChannel) {
-                await interaction.reply({
-                    content: "Bot is not connected and user not in channel.",
-                    ephemeral: true,
-                });
-                return false;
-            }
+        if (this._player.isConnected)
+            return true;
 
-            await this._player.connect(voiceChannel);
+        const voiceChannel = this.getVoiceChannel(interaction);
+        if (!voiceChannel) {
+            await interaction.reply({
+                content: "Bot is not connected and user not in channel.",
+                ephemeral: true,
+            });
+            return false;
         }
+
+        await this._player.connect(voiceChannel);
         return true;
     }
 }

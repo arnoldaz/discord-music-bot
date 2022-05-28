@@ -9,7 +9,9 @@ export class ClearCommand extends BaseCommand {
     public constructor(player: Player) {
         super(player);
 
-        this.data = new SlashCommandBuilder().setName("clear").setDescription("Clear current queue.");
+        this.data = new SlashCommandBuilder()
+            .setName("clear")
+            .setDescription("Clear current queue.");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {

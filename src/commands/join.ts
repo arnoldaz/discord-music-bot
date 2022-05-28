@@ -10,9 +10,12 @@ export class JoinCommand extends BaseCommand {
     public constructor(player: Player) {
         super(player);
 
-        this.data = new SlashCommandBuilder().setName("join").setDescription("Joins voice channel");
-        this.data.addStringOption(option =>
-            option.setName(JoinCommand._nameOption).setDescription("Specific voice channel name")
+        this.data = new SlashCommandBuilder()
+            .setName("join")
+            .setDescription("Joins voice channel");
+        this.data.addStringOption(option => option
+            .setName(JoinCommand._nameOption)
+            .setDescription("Specific voice channel name")
         );
     }
 
@@ -22,17 +25,15 @@ export class JoinCommand extends BaseCommand {
             ? await this.getSpecifiedChannel(interaction, channelName)
             : await this.getUserChannel(interaction);
 
-        if (!voiceChannel) return;
+        if (!voiceChannel) 
+            return;
 
         await interaction.deferReply();
         await this._player.connect(voiceChannel);
         await interaction.editReply(`Connected to voice channel: ${Formatters.inlineCode(voiceChannel.name)}`);
     }
 
-    private async getSpecifiedChannel(
-        interaction: CommandInteraction,
-        channelName: string
-    ): Promise<VoiceChannel | StageChannel | null> {
+    private async getSpecifiedChannel(interaction: CommandInteraction, channelName: string): Promise<VoiceChannel | StageChannel | null> {
         const channels = interaction.guild?.channels?.cache;
         if (!channels) {
             await interaction.reply({

@@ -9,7 +9,9 @@ export class QueueCommand extends BaseCommand {
     public constructor(player: Player) {
         super(player);
 
-        this.data = new SlashCommandBuilder().setName("queue").setDescription("Skip current song");
+        this.data = new SlashCommandBuilder()
+            .setName("queue")
+            .setDescription("Skip current song");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
@@ -17,9 +19,7 @@ export class QueueCommand extends BaseCommand {
 
         const queue = this._player
             .getQueue()
-            .map(
-                (x, i) => `${i + 1}: ${Formatters.inlineCode(x.title)} (${Formatters.inlineCode(x.formattedDuration)})`
-            )
+            .map((x, i) => `${i + 1}: ${Formatters.inlineCode(x.title)} (${Formatters.inlineCode(x.formattedDuration)})`)
             .join("\n");
 
         await interaction.editReply(queue ? `Current queue: \n` + queue : "Current queue is empty");

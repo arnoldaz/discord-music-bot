@@ -21,18 +21,20 @@ export class DiscordClient {
         });
 
         this._client.on("interactionCreate", async (interaction: Interaction) => {
-            if (!interaction.isCommand()) return;
+            if (!interaction.isCommand()) 
+                return;
 
             const command = this._commandsMap.get(interaction.commandName);
-            if (!command) return;
+            if (!command) 
+                return;
 
             try {
                 await command.execute(interaction);
             } catch (error) {
                 const errorString = `Command execution error: ${error}`;
                 Logger.logError(errorString);
-                Logger.logError((error as Error).stack!);
-                Logger.logInfo(`Interaction replied/deferred: ${interaction.replied}/${interaction.deferred}`);
+                Logger.logError((error as Error).stack ?? "No error callstack found.");
+
                 if (interaction.replied || interaction.deferred)
                     await interaction.followUp({ content: errorString, ephemeral: true });
                 else await interaction.reply({ content: errorString, ephemeral: true });

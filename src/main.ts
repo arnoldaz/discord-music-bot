@@ -19,6 +19,7 @@ import {
     ShuffleCommand,
     SkipCommand,
 } from "./commands";
+import { SeekCommand } from "./commands/seek";
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ dotenv.config();
         new RadioCommand(player),
         new JoinCommand(player),
         new LyricsCommand(player),
+        new SeekCommand(player),
     ];
 
     if (process.argv.slice(2).some(arg => arg.includes("register"))) {

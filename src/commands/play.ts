@@ -11,17 +11,24 @@ export class PlayCommand extends BaseCommand {
     public constructor(player: Player) {
         super(player);
 
-        this.data = new SlashCommandBuilder().setName("play").setDescription("Plays music from Youtube");
-        this.data.addStringOption(option =>
-            option.setName("query").setDescription("Search for Youtube music video").setRequired(true)
+        this.data = new SlashCommandBuilder()
+            .setName("play")
+            .setDescription("Plays music from Youtube");
+        this.data.addStringOption(option => option
+            .setName("query")
+            .setDescription("Search for Youtube music video")
+            .setRequired(true)
         );
-        this.data.addIntegerOption(option =>
-            option.setName("modification").setDescription("Modifies song").addChoice("Nightcore", AudioFilter.Nightcore)
+        this.data.addIntegerOption(option => option
+            .setName("modification")
+            .setDescription("Modifies song")
+            .addChoices({ name: "Nightcore", value: AudioFilter.Nightcore })
         );
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
-        if (!(await this.joinVoiceChannel(interaction))) return;
+        if (!await this.joinVoiceChannel(interaction))
+            return;
 
         await interaction.deferReply();
 

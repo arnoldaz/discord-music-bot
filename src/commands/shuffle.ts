@@ -9,7 +9,9 @@ export class ShuffleCommand extends BaseCommand {
     public constructor(player: Player) {
         super(player);
 
-        this.data = new SlashCommandBuilder().setName("shuffle").setDescription("Shuffle queue.");
+        this.data = new SlashCommandBuilder()
+            .setName("shuffle")
+            .setDescription("Shuffle queue.");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {

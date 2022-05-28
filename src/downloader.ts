@@ -1,5 +1,5 @@
 import { Readable } from "stream";
-import { YouTube } from "youtube-sr";
+import { YouTube as YoutubeSearch } from "youtube-sr";
 import ytdl from "ytdl-core";
 import { Logger } from "./logger";
 import { IDownloader, Song } from "./types";
@@ -38,7 +38,9 @@ export class YoutubeDownloader implements IDownloader {
     }
 
     private async getVideoData(query: string): Promise<Song> {
-        const videoData = this.isUrl(query) ? await YouTube.getVideo(query) : await YouTube.searchOne(query);
+        const videoData = this.isUrl(query) 
+            ? await YoutubeSearch.getVideo(query) 
+            : await YoutubeSearch.searchOne(query);
 
         if (!videoData || !videoData.id || !videoData.title) throw `Incomplete video data: ${videoData}`;
 
