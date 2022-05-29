@@ -14,7 +14,7 @@ import {
 } from "@discordjs/voice";
 import { Logger } from "./logger";
 import { IDownloader, Song } from "./types";
-import { AudioFilter, Transcoder } from "./transcoder";
+import { AudioFilter, RadioStation, Transcoder } from "./transcoder";
 import { Readable } from "stream";
 import { ExtendedDataScraper } from "./newDownloader";
 import { LyricsScraper } from "./lyrics";
@@ -138,8 +138,8 @@ export class Player {
 
     public playRadio(): void {
         // const url = "https://stream.m-1.fm/m1/aacp64";
-        const url = "https://powerhit.ls.lv/PHR_AAC";
-        const stream = this._transcoder.getRadioStream(url);
+        // const url = "https://powerhit.ls.lv/PHR_AAC";
+        const stream = this._transcoder.getOpusRadioStream(RadioStation.PowerHitRadio);
         const resource = this.createAudioResource(stream);
         this._audioPlayer!.play(resource);
 
@@ -174,7 +174,7 @@ export class Player {
         //     ? this._transcoder.applyFilters(rawStream, downloadData.filters)
         //     : rawStream;
 
-        const stream = this._transcoder.applyFilters(rawStream, downloadData.filters, startAtSeconds);
+        const stream = this._transcoder.transcodeToOpus(rawStream, downloadData.filters, startAtSeconds);
         const resource = this.createAudioResource(stream);
         this._audioPlayer!.play(resource);
 
