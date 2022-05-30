@@ -1,6 +1,7 @@
 import { StageChannel, VoiceChannel } from "discord.js";
 import {
     AudioPlayer,
+    AudioPlayerError,
     AudioPlayerStatus,
     AudioResource,
     createAudioPlayer,
@@ -13,18 +14,64 @@ import {
     VoiceConnectionStatus,
 } from "@discordjs/voice";
 import { Logger } from "./logger";
-import { IDownloader, Song } from "./types";
 import { AudioFilter, RadioStation, Transcoder } from "./transcoder";
 import { Readable } from "stream";
 import { ExtendedDataScraper } from "./newDownloader";
 import { LyricsScraper } from "./lyrics";
+import { YoutubeSearcher } from "./downloader";
+import { StreamDownloader } from "./streamDownloader";
 
-export interface PlayData {
-    playingNow: boolean;
-    title: string;
-    formattedDuration: string;
+/**
+ * Supported player audio types.
+ */
+export enum AudioType {
+    Song,
+    Radio,
 }
 
+/**
+ * Supported player audio type combined interface.
+ */
+export type AudioData = SongData | RadioData;
+
+/**
+ * Interface describing stored {@link Player} song data.
+ */
+export interface SongData {
+    type: AudioType.Song;
+    videoId: string;
+    stream: Readable;
+    title: string;
+    durationInSeconds: number;
+    thumbnailUrl: string;
+    filters?: AudioFilter[];
+}
+
+/**
+ * Interface describing stored {@link Player} radio station data.
+ */
+export interface RadioData {
+    type: AudioType.Radio;
+    title: string;
+    radioStation: RadioStation;
+    filters?: AudioFilter[];
+}
+
+/**
+ * Interface describing {@link Player.play} method results.
+ */
+ export interface PlayResult {
+    videoId: string;
+    isPlayingNow: boolean;
+    title: string;
+    durationInSeconds: number;
+    formattedDuration: string;
+    thumbnailUrl: string;
+}
+
+/**
+ * Class for playing audio and managing voice channel audio player connection.
+ */
 export class Player {
     private _isConnected = false;
     private _connectedChannel?: VoiceChannel | StageChannel;
@@ -32,26 +79,50 @@ export class Player {
     private _audioPlayer?: AudioPlayer;
 
     private _isPlaying = false;
-    private _nowPlaying!: Song;
-    private _queue: Song[] = [];
+    private _nowPlaying?: AudioData;
+    private _queue: AudioData[] = [];
 
-    public constructor(private _downloader: IDownloader, private _transcoder: Transcoder) {}
+    public constructor(private _transcoder: Transcoder) {}
 
+    /** 
+     * Whether player is connected to voice channel.
+     */
     public get isConnected(): boolean {
         return this._isConnected;
     }
 
-    public get connectedChannel(): VoiceChannel | StageChannel | null {
-        return this._connectedChannel ?? null;
+    /**
+     * Gets currently playing song data.
+     * Returns undefined if nothing is playing.
+     */
+    public get currentlyPlaying(): AudioData | undefined {
+        if (!this._isPlaying) 
+            return undefined;
+
+        return this._nowPlaying;
     }
 
+    /**
+     * Gets current song queue.
+     */
+    public get queue(): AudioData[] {
+        return this._queue;
+    }
+
+    /**
+     * Creates audio player and connects to voice channel.
+     * @param voiceChannel Voice channel to connect to.
+     */
     public async connect(voiceChannel: VoiceChannel | StageChannel): Promise<void> {
         if (this._isConnected && this._connectedChannel?.id == voiceChannel.id) {
-            Logger.logError(`Player is already connected to voice channel "${voiceChannel.name}".`);
+            Logger.logInfo(`Player is already connected to voice channel "${voiceChannel.name}".`);
             return;
         }
 
-        if (!this._audioPlayer) this._audioPlayer = this.createAudioPlayer();
+        if (!this._audioPlayer) {
+            Logger.logInfo("Creating audio player.");
+            this._audioPlayer = this.createAudioPlayer();
+        }
 
         this._connection = await this.joinChannel(voiceChannel);
         this._connection.subscribe(this._audioPlayer);
@@ -59,9 +130,12 @@ export class Player {
         this._connectedChannel = voiceChannel;
     }
 
+    /**
+     * Destroys audio player voice channel connection.
+     */
     public disconnect(): void {
         if (!this._isConnected) {
-            Logger.logError("Player is not connected.");
+            Logger.logInfo("Player is not connected.");
             return;
         }
 
@@ -71,81 +145,143 @@ export class Player {
         this._connectedChannel = undefined;
     }
 
-    public async seek(seconds: number): Promise<void> {
-        if (!this._isPlaying) {
-            Logger.logError("Nothing is playing to seek.");
-            return;
-        }
-
-        this.playNow(this._nowPlaying, seconds);
-    }
-
-    public async play(query: string, modifications: AudioFilter[] = []): Promise<PlayData> {
-        const downloadData = await this._downloader.download(query);
-        downloadData.filters = modifications;
+    /**
+     * Plays or queues song to audio player.
+     * @param query Song search query or direct url.
+     * @param filters List of filters to be applied to audio.
+     * @returns A {@link PlayResult} object containing played or queued song information.
+     */
+    public async play(query: string, filters?: AudioFilter[]): Promise<PlayResult> {
+        const searchData = await YoutubeSearcher.search(query);
         const playNow = !this._isPlaying;
 
-        Logger.logInfo(`Play now: ${playNow}`);
+        const songData: SongData = {
+            type: AudioType.Song,
+            videoId: searchData.id,
+            stream: await StreamDownloader.getStream(searchData.id),
+            title: searchData.title,
+            durationInSeconds: searchData.durationInSeconds,
+            thumbnailUrl: searchData.thumbnailUrl,
+            filters,
+        };
 
-        if (playNow) 
-            this.playNow(downloadData);
-        else 
-            this.addToQueue(downloadData);
+        if (playNow)
+            this.playNow(songData);
+        else
+            this.addToQueue(songData);
 
         return {
-            playingNow: playNow,
-            title: downloadData.title,
-            formattedDuration: downloadData.formattedDuration,
+            videoId: songData.videoId,
+            isPlayingNow: playNow,
+            title: songData.title,
+            durationInSeconds: songData.durationInSeconds,
+            formattedDuration: searchData.formattedDuration,
+            thumbnailUrl: songData.thumbnailUrl,
         };
     }
 
+    /**
+     * Force-plays song on audio player.
+     * {@link Player.connect} must be called beforehand to initialize audio player and setup connection.
+     * @param audioData Song data to be played.
+     * @param startAtSeconds Start audio stream at specified starting point in seconds.
+     */
+    private playNow(audioData: AudioData, startAtSeconds = 0): void {
+        const transcodedStream = audioData.type == AudioType.Radio
+            ? this._transcoder.getOpusRadioStream(audioData.radioStation)
+            : this._transcoder.transcodeToOpus(audioData.stream, audioData.filters, startAtSeconds);
+        const resource = this.createOpusAudioResource(transcodedStream);
+        this._audioPlayer!.play(resource);
+        this._nowPlaying = audioData;
+    }
+
+    /**
+     * Skips currently playing song.
+     */
     public skip(): void {
         this._audioPlayer?.stop(true);
     }
 
+    /**
+     * Pauses currently playing song.
+     */
     public pause(): void {
         this._audioPlayer?.pause();
     }
 
+    /**
+     * Resumes previously paused song.
+     */
     public resume(): void {
         this._audioPlayer?.unpause();
     }
 
-    public getCurrentlyPlaying(): Song | null {
-        if (!this._isPlaying) return null;
+    /**
+     * Seeks currently playing song to specified location.
+     * @param seconds Seconds from song starting point to seek to.
+     * @returns False if nothing is currently playing, true otherwise.
+     */
+    public async seek(seconds: number): Promise<boolean> {
+        if (!this._isPlaying) {
+            Logger.logError("Nothing is currently playing to seek.");
+            return false;
+        }
 
-        return this._nowPlaying;
+        // Restarts song from new starting point.
+        this.playNow(this._nowPlaying!, seconds);
+        return true;
     }
 
-    public getQueue(): Song[] {
-        return this._queue;
-    }
-
+    /**
+     * Shuffles current song queue.
+     */
     public shuffleQueue(): void {
         this._queue.sort(() => Math.random() - 0.5);
     }
 
+    /**
+     * Clears current song queue.
+     */
     public clearQueue(): void {
-        this._queue = [];
+        while (this._queue.length > 0)
+            this._queue.pop();
     }
 
+    /**
+     * Removes song from the queue.
+     * @param index Index of the song in the queue to be removed.
+     * @returns True if it was successfully removed, false otherwise.
+     */
     public removeSong(index: number): boolean {
-        if (this._queue.length < index) return false;
+        if (this._queue.length < index) 
+            return false;
 
         this._queue.splice(index - 1, 1);
         return true;
     }
 
-    public playRadio(): void {
+    public playRadio(radioStation: RadioStation): void {
         // const url = "https://stream.m-1.fm/m1/aacp64";
         // const url = "https://powerhit.ls.lv/PHR_AAC";
-        const stream = this._transcoder.getOpusRadioStream(RadioStation.PowerHitRadio);
-        const resource = this.createAudioResource(stream);
-        this._audioPlayer!.play(resource);
+        // const stream = this._transcoder.getOpusRadioStream(RadioStation.PowerHitRadio);
+        // const resource = this.createOpusAudioResource(stream);
+        // this._audioPlayer!.play(resource);
 
-        Logger.logInfo("Audio player is playing radio.");
-        this._isPlaying = true;
-        this._nowPlaying = { id: "", title: "Power Hit Radio", formattedDuration: "Infinity" };
+        // Logger.logInfo("Audio player is playing radio.");
+        // this._isPlaying = true;
+        // this._nowPlaying = { id: "", title: "Power Hit Radio", formattedDuration: "Infinity" };
+        
+        const playNow = !this._isPlaying;
+        const radioData: RadioData = {
+            type: AudioType.Radio,
+            title: "", 
+            radioStation,
+        };
+
+        if (playNow)
+            this.playNow(radioData);
+        else
+            this.addToQueue(radioData);
     }
 
     public async getLyrics(): Promise<string | null> {
@@ -166,29 +302,14 @@ export class Player {
         return lyrics;
     }
 
-    private async playNow(downloadData: Song, startAtSeconds = 0): Promise<void> {
-        const rawStream = await this._downloader.getStream(downloadData.id);
-        // const stream = this._transcoder.cutOut(rawStream);
 
-        // const stream = downloadData.filters
-        //     ? this._transcoder.applyFilters(rawStream, downloadData.filters)
-        //     : rawStream;
-
-        const stream = this._transcoder.transcodeToOpus(rawStream, downloadData.filters, startAtSeconds);
-        const resource = this.createAudioResource(stream);
-        this._audioPlayer!.play(resource);
-
-        Logger.logInfo("Audio player is playing.");
-        this._isPlaying = true;
-        this._nowPlaying = downloadData;
+    private addToQueue(audioData: AudioData): void {
+        this._queue.push(audioData);
     }
 
-    private addToQueue(downloadData: Song): void {
-        this._queue.push(downloadData);
-    }
-
-    private getNextSong(): Song | null {
-        if (this._queue.length == 0) return null;
+    private getNextSong(): SongData | null {
+        if (this._queue.length == 0)
+            return null;
 
         return this._queue.shift()!;
     }
@@ -205,7 +326,7 @@ export class Player {
         try {
             connection = await entersState(connection, VoiceConnectionStatus.Ready, 20000);
         } catch (error) {
-            Logger.logInfo(`Joining voice channel failed: ${error}`);
+            Logger.logError(`Joining voice channel failed: ${error}`);
             connection.destroy();
         }
 
@@ -215,19 +336,33 @@ export class Player {
     private createAudioPlayer(): AudioPlayer {
         const audioPlayer = createAudioPlayer();
 
-        audioPlayer.on(AudioPlayerStatus.Idle, () => {
+        audioPlayer.on(AudioPlayerStatus.Idle, (oldState, newState) => {
+            if (oldState.status == AudioPlayerStatus.Buffering) {
+                Logger.logError("Buffering failed and audio player reset back to idle.");
+            }
+
             Logger.logInfo("Audio player is idle.");
             this._isPlaying = false;
             this.skip();
 
             const nextSong = this.getNextSong();
-            if (nextSong) this.playNow(nextSong);
+            if (nextSong)
+                this.playNow(nextSong);
+        });
+
+        audioPlayer.on(AudioPlayerStatus.Playing, () => {
+            Logger.logInfo("Audio player has started playing.");
+            this._isPlaying = true;
+        });
+
+        audioPlayer.on("error", (error: AudioPlayerError) => {
+            Logger.logError(`Error occured on audio player: "${error.message}" from resource "${JSON.stringify(error.resource.metadata)}"`);
         });
 
         return audioPlayer;
     }
 
-    private createAudioResource(stream: Readable): AudioResource<null> {
+    private createOpusAudioResource(stream: Readable): AudioResource<null> {
         return createAudioResource(stream, { inputType: StreamType.Opus });
     }
 }
