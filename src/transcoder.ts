@@ -17,8 +17,8 @@ export enum RadioStation {
 
 /** Class for transcoding audio streams. */
 export class Transcoder {
-    
-    /** Implementation of audio filters as FFmpeg transcoder parameters. */
+
+    /** Implementations of audio filters as FFmpeg transcoder parameters. */
     private static _availableAudioFilters: { [filter in AudioFilter]: string } = {
         [AudioFilter.Nightcore]: "atempo=1.06,asetrate=48000*1.25",
         [AudioFilter.Earrape]: "channelsplit,sidechaingate=level_in=64",
@@ -49,13 +49,13 @@ export class Transcoder {
      */
     public transcodeToOpus(stream: Readable, filters?: AudioFilter[], startAtSeconds?: number): Readable {
         const transcoderArgs = [...Transcoder._defaultFFmpegArgs];
-        if (filters) {
+        if (filters && filters.length > 0) {
             const filterString = filters.map(x => Transcoder._availableAudioFilters[x]).join(",");
             transcoderArgs.push("-af", filterString);
             Logger.logInfo(`Added filter string: ${filterString}`);
         }
 
-        if (startAtSeconds) {
+        if (startAtSeconds && startAtSeconds > 0) {
             const timeString = this.convertSecondsToTimeString(startAtSeconds);
             transcoderArgs.push("-ss", timeString);
             Logger.logInfo(`Seeking to ${timeString} (${startAtSeconds} seconds).`);
