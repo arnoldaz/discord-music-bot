@@ -32,14 +32,24 @@ export interface VideoData {
 }
 
 export class ExtendedDataScraper {
-    private static _videoUrl = "https://www.youtube.com/watch?v=";
+    private static _videoUrlPrefix = "https://www.youtube.com/watch?v=";
+
+    private static _initialDataPrefix = "var ytInitialData = ";
+    private static _initialDataPostfix = ";</script>";
+
+    private static _playerDataPrefix = "var ytInitialPlayerResponse = ";
+    private static _playerDataPostfix = ";</script>";
 
     public static async getVideoData(videoId: string): Promise<VideoData> {
-        const result = await axios.get<string>(this._videoUrl + videoId, { headers: { "accept-language": "en-GB" } });
+        const result = await axios.get<string>(this._videoUrlPrefix + videoId, { headers: { "accept-language": "en-GB" } });
         const data = result.data;
 
-        const initialDataString = data.split("var ytInitialData = ")[1].split(";</script>")[0];
-        const playerDataString = data.split("var ytInitialPlayerResponse = ")[1].split(";</script>")[0];
+        const initialDataString = data
+            .split(this._initialDataPrefix)[1]
+            .split(this._initialDataPostfix)[0];
+        const playerDataString = data
+            .split(this._playerDataPrefix)[1]
+            .split(this._playerDataPostfix)[0];
 
         const initialData = JSON.parse(initialDataString);
         const playerData = JSON.parse(playerDataString);
@@ -69,9 +79,8 @@ export class ExtendedDataScraper {
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
     private static getSongMetadata(initialData: any): SongMetadata {
-        const metadata =
-            initialData.contents.twoColumnWatchNextResults.results.results.contents[1].videoSecondaryInfoRenderer
-                .metadataRowContainer.metadataRowContainerRenderer.rows;
+        const metadata = initialData.contents.twoColumnWatchNextResults.results.results.contents[1]
+            .videoSecondaryInfoRenderer.metadataRowContainer.metadataRowContainerRenderer.rows;
 
         const artist = metadata?.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Artist");
         const song = metadata?.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Song");

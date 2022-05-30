@@ -1,57 +1,33 @@
-import { Readable } from "stream";
 import { YouTube as YoutubeSearch } from "youtube-sr";
 import ytdl from "ytdl-core";
 import { Logger } from "./logger";
-import { IDownloader, Song } from "./types";
 
-export class YoutubeDownloader implements IDownloader {
-    private readonly _videoPrefix: string = "https://www.youtube.com/watch?v=";
-    private readonly _downloadOptions: ytdl.downloadOptions = {
-        quality: "highestaudio",
-        filter: "audioonly",
-        dlChunkSize: 0,
-        highWaterMark: 1 << 25,
-    };
+export interface SearchData {
+    id: string;
+    title: string;
+    durationInSeconds: number;
+    formattedDuration: string;
+    thumbnailUrl: string;
+}
 
-    public async download(query: string): Promise<Song> {
-        const videoData = await this.getVideoData(query);
-        Logger.logInfo(`Got video data: ${JSON.stringify(videoData)}`);
-
-        return {
-            title: videoData.title,
-            formattedDuration: videoData.formattedDuration,
-            id: videoData.id,
-        };
-    }
-
-    public async getStream(videoId: string): Promise<Readable> {
-        Logger.logInfo("Downloading stream...");
-
-        return ytdl(`${this._videoPrefix}${videoId}`, {
-            ...this._downloadOptions,
-            requestOptions: {
-                headers: {
-                    cookie: process.env.YOUTUBE_COOKIE,
-                },
-            },
-        });
-    }
-
-    private async getVideoData(query: string): Promise<Song> {
+export class YoutubeSearcher {
+    public static async search(query: string): Promise<SearchData> {
         const videoData = this.isUrl(query) 
             ? await YoutubeSearch.getVideo(query) 
             : await YoutubeSearch.searchOne(query);
 
-        if (!videoData || !videoData.id || !videoData.title) throw `Incomplete video data: ${videoData}`;
+        Logger.logInfo(`Found searched video data: id="${videoData.id}" title="${videoData.title}"`);
 
         return {
-            id: videoData.id,
-            title: videoData.title,
+            id: videoData.id!,
+            title: videoData.title!,
+            durationInSeconds: videoData.duration,
             formattedDuration: videoData.durationFormatted,
+            thumbnailUrl: videoData.thumbnail!.displayThumbnailURL(),
         };
     }
 
-    private isUrl(query: string): boolean {
+    private static isUrl(query: string): boolean {
         return ytdl.validateURL(query);
     }
 }
