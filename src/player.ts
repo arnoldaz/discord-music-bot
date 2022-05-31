@@ -44,6 +44,7 @@ export interface SongData {
     stream: Readable;
     title: string;
     durationInSeconds: number;
+    formattedDuration: string;
     thumbnailUrl: string;
     filters?: AudioFilter[];
 }
@@ -174,6 +175,7 @@ export class Player {
             stream: await StreamDownloader.getStream(searchData.id),
             title: searchData.title,
             durationInSeconds: searchData.durationInSeconds,
+            formattedDuration: searchData.formattedDuration,
             thumbnailUrl: searchData.thumbnailUrl,
             filters,
         };

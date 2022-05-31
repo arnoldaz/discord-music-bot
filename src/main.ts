@@ -3,7 +3,6 @@ import { Logger } from "./logger";
 import { DiscordClient } from "./client";
 import { Player } from "./player";
 import { registerCommands } from "./register";
-import { YoutubeDownloader } from "./downloader";
 import { Transcoder } from "./transcoder";
 import {
     BaseCommand,
@@ -24,9 +23,8 @@ import { SeekCommand } from "./commands/seek";
 dotenv.config();
 
 (async () => {
-    const downloader = new YoutubeDownloader();
     const transcoder = new Transcoder();
-    const player = new Player(downloader, transcoder);
+    const player = new Player(transcoder);
 
     const supportedCommands: BaseCommand[] = [
         new PlayCommand(player),

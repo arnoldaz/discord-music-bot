@@ -1,7 +1,7 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { Player } from "../player";
-import { CommandInteraction } from "discord.js";
+import { AudioType, Player } from "../player";
+import { CommandInteraction, Formatters } from "discord.js";
 
 export class NowPlayingCommand extends BaseCommand {
     public data: SlashCommandBuilder;
@@ -16,10 +16,10 @@ export class NowPlayingCommand extends BaseCommand {
 
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
-        const currentSong = this._player.getCurrentlyPlaying();
+        const currentSong = this._player.currentlyPlaying;
         await interaction.editReply(
             currentSong
-                ? `Currently playing: \`${currentSong.title}\` (\`${currentSong.formattedDuration}\`)`
+                ? `Currently playing: ${Formatters.inlineCode(currentSong.title)}${currentSong.type == AudioType.Song ? ` (${Formatters.inlineCode(currentSong.formattedDuration)})` : ""}`
                 : "Nothing is currently playing."
         );
     }

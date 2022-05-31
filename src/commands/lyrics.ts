@@ -16,7 +16,7 @@ export class LyricsCommand extends BaseCommand {
 
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
-        const song = this._player.getCurrentlyPlaying();
+        const song = this._player.currentlyPlaying;
         const lyrics = await this._player.getLyrics();
 
         if (!lyrics) {
