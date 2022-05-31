@@ -4,7 +4,6 @@ import { BaseCommand } from "./baseCommand";
 import { Logger } from "../logger";
 import { Player } from "../player";
 import { AudioFilter } from "../transcoder";
-import { ExtendedDataScraper } from "../newDownloader";
 
 export class PlayCommand extends BaseCommand {
     public data: SlashCommandBuilder;
