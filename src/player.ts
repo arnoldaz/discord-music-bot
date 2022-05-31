@@ -2,6 +2,7 @@ import { StageChannel, VoiceChannel } from "discord.js";
 import {
     AudioPlayer,
     AudioPlayerError,
+    AudioPlayerState,
     AudioPlayerStatus,
     AudioResource,
     createAudioPlayer,
@@ -30,7 +31,7 @@ export enum AudioType {
 }
 
 /**
- * Supported player audio type combined interface.
+ * Supported player audio types combined interface.
  */
 export type AudioData = SongData | RadioData;
 
@@ -82,7 +83,19 @@ export class Player {
     private _nowPlaying?: AudioData;
     private _queue: AudioData[] = [];
 
+    private static _radioStationNames: { [station in RadioStation]: string } = {
+        [RadioStation.PowerHitRadio]: "Power Hit Radio",
+        [RadioStation.M1]: "M-1",
+    };
+
     public constructor(private _transcoder: Transcoder) {}
+
+    /**
+     * Gets dictionary of radio station display names.
+     */
+    public static get radioStationNames(): { [station in RadioStation]: string } {
+        return this._radioStationNames;
+    }
 
     /** 
      * Whether player is connected to voice channel.
@@ -260,21 +273,15 @@ export class Player {
         return true;
     }
 
+    /**
+     * Plays or queues radio station to audio player.
+     * @param radioStation Radio station to play or queue.
+     */
     public playRadio(radioStation: RadioStation): void {
-        // const url = "https://stream.m-1.fm/m1/aacp64";
-        // const url = "https://powerhit.ls.lv/PHR_AAC";
-        // const stream = this._transcoder.getOpusRadioStream(RadioStation.PowerHitRadio);
-        // const resource = this.createOpusAudioResource(stream);
-        // this._audioPlayer!.play(resource);
-
-        // Logger.logInfo("Audio player is playing radio.");
-        // this._isPlaying = true;
-        // this._nowPlaying = { id: "", title: "Power Hit Radio", formattedDuration: "Infinity" };
-        
         const playNow = !this._isPlaying;
         const radioData: RadioData = {
             type: AudioType.Radio,
-            title: "", 
+            title: Player._radioStationNames[radioStation],
             radioStation,
         };
 
@@ -284,36 +291,51 @@ export class Player {
             this.addToQueue(radioData);
     }
 
-    public async getLyrics(): Promise<string | null> {
-        if (!this._isPlaying || !this._nowPlaying.id) return null;
+    /**
+     * Gets lyrics of currently playing song if they are available.
+     * @returns Lyrics as a string if they are available, undefined otherwise.
+     */
+    public async getLyrics(): Promise<string | undefined> {
+        if (!this._isPlaying || !this._nowPlaying || this._nowPlaying.type == AudioType.Radio)
+            return undefined;
 
-        const extendedData = await ExtendedDataScraper.getVideoData(this._nowPlaying.id);
-        Logger.logInfo(
-            `Extended data found for id "${this._nowPlaying.id}": ${JSON.stringify(extendedData.songMetadata)}`
-        );
+        const extendedData = await ExtendedDataScraper.getVideoData(this._nowPlaying.videoId);
+        Logger.logInfo(`Extended data found for "${this._nowPlaying.title}": ${JSON.stringify(extendedData.songMetadata)}`);
 
         const lyrics = await LyricsScraper.getLyrics(
             this._nowPlaying.title,
             extendedData.songMetadata?.artist,
             extendedData.songMetadata?.song
         );
-        Logger.logInfo(`Lyrics are ${lyrics ? "found" : "not found"}.`);
+        Logger.logInfo(`Lyrics are ${lyrics ? `"${lyrics.substring(0, 30)}"` : "not found"}`);
 
         return lyrics;
     }
 
-
+    /**
+     * Adds audio to queue.
+     * @param audioData Audio data to queue.
+     */
     private addToQueue(audioData: AudioData): void {
         this._queue.push(audioData);
     }
 
-    private getNextSong(): SongData | null {
+    /**
+     * Gets next song in the queue
+     * @returns 
+     */
+    private getNextSong(): AudioData | undefined {
         if (this._queue.length == 0)
-            return null;
+            return undefined;
 
-        return this._queue.shift()!;
+        return this._queue.shift();
     }
 
+    /**
+     * Creates voice connection to voice channel.
+     * @param channel Voice channel to connect to.
+     * @returns Created voice connection.
+     */
     private async joinChannel(channel: VoiceChannel | StageChannel): Promise<VoiceConnection> {
         Logger.logInfo(`Joining voice channel: ${channel.name}`);
 
@@ -333,10 +355,14 @@ export class Player {
         return connection;
     }
 
+    /**
+     * Creates audio player with predefined state listeners.
+     * @returns Created audio player.
+     */
     private createAudioPlayer(): AudioPlayer {
         const audioPlayer = createAudioPlayer();
 
-        audioPlayer.on(AudioPlayerStatus.Idle, (oldState, newState) => {
+        audioPlayer.on(AudioPlayerStatus.Idle, (oldState: AudioPlayerState) => {
             if (oldState.status == AudioPlayerStatus.Buffering) {
                 Logger.logError("Buffering failed and audio player reset back to idle.");
             }
@@ -362,6 +388,11 @@ export class Player {
         return audioPlayer;
     }
 
+    /**
+     * Creates audio resource with Opus input type.
+     * @param stream Readable stream to create audio resource from.
+     * @returns Created audio resource.
+     */
     private createOpusAudioResource(stream: Readable): AudioResource<null> {
         return createAudioResource(stream, { inputType: StreamType.Opus });
     }

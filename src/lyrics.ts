@@ -8,7 +8,7 @@ export class LyricsScraper {
         end: '</div></div></div></div></div><div><span class="hwc"><div class="BNeawe uEec3 AP7Wnd">',
     };
 
-    public static async getLyrics(title: string, artist?: string, song?: string): Promise<string | null> {
+    public static async getLyrics(title: string, artist?: string, song?: string): Promise<string | undefined> {
         const url =
             artist && song
                 ? this._searchUrl + encodeURIComponent(`${artist} ${song} lyrics`)
@@ -18,7 +18,8 @@ export class LyricsScraper {
         const htmlText = result.data as string;
 
         const lyricsText = htmlText.split(this._htmlLocation.start)[1]?.split(this._htmlLocation.end)[0];
-        if (!lyricsText) return null;
+        if (!lyricsText) 
+            return undefined;
 
         const decodedLyrics = lyricsText
             .split("\n")

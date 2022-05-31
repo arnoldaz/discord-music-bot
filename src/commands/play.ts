@@ -34,20 +34,15 @@ export class PlayCommand extends BaseCommand {
         await interaction.deferReply();
 
         const query = interaction.options.getString("query")!;
-
-        const modification = interaction.options.getInteger("modification");
+        const modification = interaction.options.getInteger("modification") as AudioFilter | null;
         Logger.logInfo(`Got modification: ${modification}`);
 
-        const data = await this._player.play(query, modification != null ? [modification as AudioFilter] : []);
-
-
-        const song = this._player.getCurrentlyPlaying()!;
-        const extendedData = await ExtendedDataScraper.getVideoData(song.id);
+        const data = await this._player.play(query, modification ? [modification] : undefined);
 
         const embed = new MessageEmbed()
-            .setTitle(data.playingNow ? "Now playing" : "Queued")
+            .setTitle(data.isPlayingNow ? "Now playing" : "Queued")
             .setDescription(Formatters.inlineCode(data.title))
-            .setThumbnail(extendedData.thumbnail.url)
+            .setThumbnail(data.thumbnailUrl)
             .addField("Duration", data.formattedDuration)
 
         await interaction.editReply({
