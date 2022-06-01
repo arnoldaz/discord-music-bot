@@ -20,7 +20,7 @@ export class LyricsCommand extends BaseCommand {
         const lyrics = await this._player.getLyrics();
 
         if (!lyrics) {
-            await interaction.editReply("Lyrics are not found for current song");
+            await interaction.editReply("Lyrics are not found for current song.");
             return;
         }
 
@@ -69,7 +69,5 @@ export class LyricsCommand extends BaseCommand {
           msg += (msg && msg !== prepend ? char : '') + chunk;
         }
         return messages.concat(msg).filter(m => m);
-      }
-    
-    
+    }
 }

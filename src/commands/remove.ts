@@ -1,6 +1,6 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { Player } from "../player";
+import { AudioType, Player } from "../player";
 import { CommandInteraction, Formatters } from "discord.js";
 
 export class RemoveCommand extends BaseCommand {
@@ -23,7 +23,19 @@ export class RemoveCommand extends BaseCommand {
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
         const id = interaction.options.getInteger(RemoveCommand._idOption)!;
-        this._player.removeSong(id);
-        await interaction.editReply(`Queue item with ID ${Formatters.inlineCode(id.toString())} removed.`);
+
+        const removedAudio = this._player.removeSong(id);
+        if (!removedAudio) {
+            await interaction.editReply(`Nothing was removed.`);
+            return;
+        }
+
+        const title = removedAudio.type == AudioType.Radio
+            ? Player.radioStationNames[removedAudio.radioStation]
+            : removedAudio.title;
+
+        await interaction.editReply(
+            `Queue item with ID ${Formatters.inlineCode(id.toString())} and title ${Formatters.inlineCode(title)} removed.`
+        );
     }
 }

@@ -1,11 +1,12 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction, Formatters, MessageEmbed } from "discord.js";
 import { BaseCommand } from "./baseCommand";
-import { Logger } from "../logger";
 import { Player } from "../player";
 import { AudioFilter } from "../transcoder";
 
 export class PlayCommand extends BaseCommand {
+    private static _queryOption = "query";
+    private static _modificationOption = "modification";
     public data: SlashCommandBuilder;
 
     public constructor(player: Player) {
@@ -15,14 +16,15 @@ export class PlayCommand extends BaseCommand {
             .setName("play")
             .setDescription("Plays music from Youtube");
         this.data.addStringOption(option => option
-            .setName("query")
+            .setName(PlayCommand._queryOption)
             .setDescription("Search for Youtube music video")
             .setRequired(true)
         );
         this.data.addIntegerOption(option => option
-            .setName("modification")
+            .setName(PlayCommand._modificationOption)
             .setDescription("Modifies song")
-            .addChoices({ name: "Nightcore", value: AudioFilter.Nightcore })
+            .addChoices(...[AudioFilter.Nightcore, AudioFilter.Earrape, AudioFilter.Audio8D]
+                .map(filter => ({ name: AudioFilter[filter], value: filter })))
         );
     }
 
@@ -32,9 +34,8 @@ export class PlayCommand extends BaseCommand {
 
         await interaction.deferReply();
 
-        const query = interaction.options.getString("query")!;
-        const modification = interaction.options.getInteger("modification") as AudioFilter | null;
-        Logger.logInfo(`Got modification: ${modification}`);
+        const query = interaction.options.getString(PlayCommand._queryOption)!;
+        const modification = interaction.options.getInteger(PlayCommand._modificationOption) as AudioFilter | null;
 
         const data = await this._player.play(query, modification ? [modification] : undefined);
 
@@ -44,10 +45,6 @@ export class PlayCommand extends BaseCommand {
             .setThumbnail(data.thumbnailUrl)
             .addField("Duration", data.formattedDuration)
 
-        await interaction.editReply({
-            // content:  (data.playingNow ? "Now playing: " : "Queued: ") +
-            //     `${Formatters.inlineCode(data.title)} (${Formatters.inlineCode(data.formattedDuration)})`,
-            embeds: [embed],
-        });
+        await interaction.editReply({ embeds: [embed] });
     }
 }

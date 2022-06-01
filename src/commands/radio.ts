@@ -5,6 +5,7 @@ import { CommandInteraction, Formatters } from "discord.js";
 import { RadioStation } from "../transcoder";
 
 export class RadioCommand extends BaseCommand {
+    private static _stationOption = "station";
     public data: SlashCommandBuilder;
 
     public constructor(player: Player) {
@@ -14,12 +15,10 @@ export class RadioCommand extends BaseCommand {
             .setName("radio")
             .setDescription("Play radio");
         this.data.addIntegerOption(option => option
-            .setName("station")
+            .setName(RadioCommand._stationOption)
             .setDescription("Radio station selection")
-            .addChoices()
-            .addChoices(...[RadioStation.PowerHitRadio, RadioStation.M1].map(radioStation => {
-                return { name: Player.radioStationNames[radioStation], value: radioStation };
-            }))
+            .addChoices(...[RadioStation.PowerHitRadio, RadioStation.M1]
+                .map(radioStation => ({ name: Player.radioStationNames[radioStation], value: radioStation })))
             .setRequired(true)
         );
     }
@@ -30,7 +29,7 @@ export class RadioCommand extends BaseCommand {
 
         await interaction.deferReply();
 
-        const radioStation = interaction.options.getInteger("station")! as RadioStation;
+        const radioStation = interaction.options.getInteger(RadioCommand._stationOption)! as RadioStation;
         this._player.playRadio(radioStation);
 
         await interaction.editReply(`Playing radio station ${Formatters.inlineCode(Player.radioStationNames[radioStation])}`);
