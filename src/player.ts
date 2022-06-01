@@ -17,10 +17,10 @@ import {
 import { Logger } from "./logger";
 import { AudioFilter, RadioStation, Transcoder } from "./transcoder";
 import { Readable } from "stream";
-import { ExtendedDataScraper } from "./newDownloader";
+import { ExtendedDataScraper } from "./scraper";
 import { LyricsScraper } from "./lyrics";
-import { YoutubeSearcher } from "./downloader";
-import { StreamDownloader } from "./streamDownloader";
+import { YoutubeSearcher } from "./search";
+import { StreamDownloader } from "./downloader";
 
 /**
  * Supported player audio types.
@@ -265,14 +265,13 @@ export class Player {
     /**
      * Removes song from the queue.
      * @param index Index of the song in the queue to be removed.
-     * @returns True if it was successfully removed, false otherwise.
+     * @returns Removed audio data if it was successfully removed, undefined otherwise.
      */
-    public removeSong(index: number): boolean {
+    public removeSong(index: number): AudioData | undefined {
         if (this._queue.length < index) 
-            return false;
+            return undefined;
 
-        this._queue.splice(index - 1, 1);
-        return true;
+        return this._queue.splice(index - 1, 1)[0];
     }
 
     /**
