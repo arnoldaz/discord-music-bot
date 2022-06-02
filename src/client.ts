@@ -30,7 +30,7 @@ export class DiscordClient {
 
         this._client.on("interactionCreate", async (interaction: Interaction) => {
             if (!interaction.isCommand()) {
-                Logger.logError("Interaction is not command.");
+                Logger.logError("Interaction is not a command.");
                 return;
             }
 
@@ -62,6 +62,6 @@ export class DiscordClient {
             return;
         }
 
-        this._client.login(process.env.BOT_TOKEN);
+        await this._client.login(token);
     }
 }
