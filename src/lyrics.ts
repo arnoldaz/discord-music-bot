@@ -9,10 +9,9 @@ export class LyricsScraper {
     };
 
     public static async getLyrics(title: string, artist?: string, song?: string): Promise<string | undefined> {
-        const url =
-            artist && song
-                ? this._searchUrl + encodeURIComponent(`${artist} ${song} lyrics`)
-                : this._searchUrl + encodeURIComponent(`${title} lyrics`);
+        const url = artist && song
+            ? this._searchUrl + encodeURIComponent(`${artist} ${song} lyrics`)
+            : this._searchUrl + encodeURIComponent(`${title} lyrics`);
 
         const result = await axios.get(url, { headers: { "accept-language": "en-GB" } });
         const htmlText = result.data as string;

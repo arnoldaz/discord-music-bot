@@ -4,9 +4,18 @@ import { Logger } from "./logger";
 
 /** Available stream audio filters. */
 export enum AudioFilter {
+    /** Transforms audio into nightcore. */
     Nightcore,
+    /** Distorts the audio. */
     Earrape,
+    /** Plays audio from different direcions. */
     Audio8D,
+    /** Adds single delay chorus effect to the audio. */
+    Chorus,
+    /** Adds double delay chorus effect to the audio. */
+    Chorus2d,
+    /** Adds triple delay chorus effect to the audio. */
+    Chorus3d,
 }
 
 /** Available radio stations. */
@@ -23,6 +32,9 @@ export class Transcoder {
         [AudioFilter.Nightcore]: "atempo=1.06,asetrate=48000*1.25",
         [AudioFilter.Earrape]: "channelsplit,sidechaingate=level_in=64",
         [AudioFilter.Audio8D]: "apulsator=hz=0.09",
+        [AudioFilter.Chorus]: "chorus=0.7:0.9:55:0.4:0.25:2",
+        [AudioFilter.Chorus2d]: "chorus=0.6:0.9:50|60:0.4|0.32:0.25|0.4:2|1.3",
+        [AudioFilter.Chorus3d]: "chorus=0.5:0.9:50|60|40:0.4|0.32|0.3:0.25|0.4|0.3:2|2.3|1.3",
     };
 
     /** Available radio station urls. */

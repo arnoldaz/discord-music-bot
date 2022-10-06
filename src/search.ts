@@ -21,7 +21,7 @@ export class YoutubeSearcher {
         return {
             id: videoData.id!,
             title: videoData.title!,
-            durationInSeconds: videoData.duration,
+            durationInSeconds: videoData.duration / 1000,
             formattedDuration: videoData.durationFormatted,
             thumbnailUrl: videoData.thumbnail!.displayThumbnailURL(),
         };

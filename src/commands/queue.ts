@@ -11,7 +11,7 @@ export class QueueCommand extends BaseCommand {
 
         this.data = new SlashCommandBuilder()
             .setName("queue")
-            .setDescription("Skip current song");
+            .setDescription("Shows current queue.");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {

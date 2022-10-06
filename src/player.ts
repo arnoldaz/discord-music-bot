@@ -21,6 +21,7 @@ import { ExtendedDataScraper } from "./scraper";
 import { LyricsScraper } from "./lyrics";
 import { YoutubeSearcher } from "./search";
 import { StreamDownloader } from "./downloader";
+import { Seconds, Timer } from "./utils/timer";
 
 /**
  * Supported player audio types.
@@ -84,6 +85,8 @@ export class Player {
     private _nowPlaying?: AudioData;
     private _queue: AudioData[] = [];
 
+    private _timer = new Timer();
+
     private static _radioStationNames: { [station in RadioStation]: string } = {
         [RadioStation.PowerHitRadio]: "Power Hit Radio",
         [RadioStation.M1]: "M-1",
@@ -121,6 +124,36 @@ export class Player {
      */
     public get queue(): AudioData[] {
         return this._queue;
+    }
+
+    public get currentTimer(): Seconds | undefined {
+        if (!this._isPlaying)
+            return undefined;
+        
+        return this._timer.getTime();
+    }
+
+    public getQueueEndTime(): Seconds | undefined {
+        if (!this._isPlaying || !this._nowPlaying)
+            return undefined;
+
+        if (this._nowPlaying.type == AudioType.Radio)
+            return undefined;
+
+        const currentPlayingTime = this.currentTimer!;
+        const currentPlayingTotalTime = this._nowPlaying.durationInSeconds;
+
+        // Logger.logInfo(JSON.stringify(this._nowPlaying));
+
+        const queueTotalTime = this._queue.reduce((previousValue, currentValue) => {
+            const realCurrentValue = currentValue.type == AudioType.Song
+                ? currentValue.durationInSeconds
+                : Infinity;
+            
+            return previousValue + realCurrentValue;
+        }, 0);
+
+        return queueTotalTime + (currentPlayingTotalTime - currentPlayingTime);
     }
 
     /**
@@ -370,6 +403,7 @@ export class Player {
 
             Logger.logInfo("Audio player is idle.");
             this._isPlaying = false;
+            this._timer.endTimer();
             this.skip();
 
             const nextSong = this.getNextSong();
@@ -380,6 +414,7 @@ export class Player {
         audioPlayer.on(AudioPlayerStatus.Playing, () => {
             Logger.logInfo("Audio player has started playing.");
             this._isPlaying = true;
+            this._timer.startTimer();
         });
 
         audioPlayer.on("error", (error: AudioPlayerError) => {
@@ -391,7 +426,7 @@ export class Player {
 
     /**
      * Creates audio resource with Opus input type.
-     * @param stream Readable stream to create audio resource from.
+     * @param stream Readable Opus audio stream to create audio resource from.
      * @returns Created audio resource.
      */
     private createOpusAudioResource(stream: Readable): AudioResource<null> {

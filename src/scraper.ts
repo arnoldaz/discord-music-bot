@@ -28,7 +28,7 @@ export interface VideoData {
     channel: ChannelData;
     live: boolean;
     tags: string[];
-    songMetadata: SongMetadata;
+    songMetadata?: SongMetadata;
 }
 
 export class ExtendedDataScraper {
@@ -36,7 +36,6 @@ export class ExtendedDataScraper {
 
     private static _initialDataPrefix = "var ytInitialData = ";
     private static _initialDataPostfix = ";</script>";
-
     private static _playerDataPrefix = "var ytInitialPlayerResponse = ";
     private static _playerDataPostfix = ";</script>";
 
@@ -77,6 +76,11 @@ export class ExtendedDataScraper {
         };
     }
 
+    /**
+     * Scrapes song metadata section if it exists.
+     * @param initialData Parsed initial data object.
+     * @returns Song metadata if it was found.
+     */
     /* eslint-disable @typescript-eslint/no-explicit-any */
     private static getSongMetadata(initialData: any): SongMetadata {
         const metadata = initialData.contents.twoColumnWatchNextResults.results.results.contents[1]
