@@ -9,9 +9,7 @@ export class LyricsScraper {
     };
 
     public static async getLyrics(title: string, artist?: string, song?: string): Promise<string | undefined> {
-        const url = artist && song
-            ? this._searchUrl + encodeURIComponent(`${artist} ${song} lyrics`)
-            : this._searchUrl + encodeURIComponent(`${title} lyrics`);
+        const url =  this._searchUrl + encodeURIComponent(this.getSearchQuery(title, artist, song));
 
         const result = await axios.get(url, { responseType: "arraybuffer", headers: { "accept-language": "en-GB" } });
         const htmlText = result.data.toString("latin1") as string;
@@ -26,5 +24,14 @@ export class LyricsScraper {
             .join("\n");
 
         return decodedLyrics;
+    }
+
+    private static getSearchQuery(title: string, artist?: string, song?: string): string {
+        const removeParentheses = (input: string) => input.replace(/ *[({[][^)]*[)}\]] */g, "").trim();
+
+        if (artist && song)
+            return `${artist} ${removeParentheses(song)} lyrics`;
+
+        return `${removeParentheses(title)} lyrics`;
     }
 }
