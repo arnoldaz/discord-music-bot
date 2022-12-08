@@ -83,16 +83,16 @@ export class ExtendedDataScraper {
      */
     /* eslint-disable @typescript-eslint/no-explicit-any */
     private static getSongMetadata(initialData: any): SongMetadata {
-        const metadata = initialData.contents.twoColumnWatchNextResults.results.results.contents[1]
-            .videoSecondaryInfoRenderer.metadataRowContainer.metadataRowContainerRenderer.rows;
+        const metadata = initialData.engagementPanels[1].engagementPanelSectionListRenderer.content.structuredDescriptionContentRenderer
+            .items[2]?.videoDescriptionMusicSectionRenderer.carouselLockups[0].carouselLockupRenderer.infoRows;
 
-        const artist = metadata?.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Artist");
-        const song = metadata?.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Song");
-        const album = metadata?.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Album");
-        const writers = metadata?.find((item: any) => item.metadataRowRenderer?.title.simpleText == "Writers");
+        const artist = metadata?.find((item: any) => item.infoRowRenderer?.title.simpleText.toLowerCase() == "artist");
+        const song = metadata?.find((item: any) => item.infoRowRenderer?.title.simpleText.toLowerCase() == "song");
+        const album = metadata?.find((item: any) => item.infoRowRenderer?.title.simpleText.toLowerCase() == "album");
+        const writers = metadata?.find((item: any) => item.infoRowRenderer?.title.simpleText.toLowerCase() == "writers");
 
-        const simpleTextParser = (x: any) => x?.metadataRowRenderer.contents?.[0].simpleText;
-        const runsTextParser = (x: any) => x?.metadataRowRenderer.contents?.[0].runs?.[0].text;
+        const simpleTextParser = (x: any) => x?.infoRowRenderer.defaultMetadata.simpleText;
+        const runsTextParser = (x: any) => x?.infoRowRenderer.defaultMetadata.runs[0].text;
 
         return {
             artist: simpleTextParser(artist) ?? runsTextParser(artist),

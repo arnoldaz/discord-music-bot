@@ -13,8 +13,8 @@ export class LyricsScraper {
             ? this._searchUrl + encodeURIComponent(`${artist} ${song} lyrics`)
             : this._searchUrl + encodeURIComponent(`${title} lyrics`);
 
-        const result = await axios.get(url, { headers: { "accept-language": "en-GB" } });
-        const htmlText = result.data as string;
+        const result = await axios.get(url, { responseType: "arraybuffer", headers: { "accept-language": "en-GB" } });
+        const htmlText = result.data.toString("latin1") as string;
 
         const lyricsText = htmlText.split(this._htmlLocation.start)[1]?.split(this._htmlLocation.end)[0];
         if (!lyricsText) 
