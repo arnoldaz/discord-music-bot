@@ -30,7 +30,7 @@ export class RadioCommand extends BaseCommand {
         await interaction.deferReply();
 
         const radioStation = interaction.options.getInteger(RadioCommand._stationOption)! as RadioStation;
-        this._player.playRadio(radioStation);
+        await this._player.playRadio(radioStation);
 
         await interaction.editReply(`Playing radio station ${Formatters.inlineCode(Player.radioStationNames[radioStation])}`);
     }

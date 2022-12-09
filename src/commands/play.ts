@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction, Formatters, MessageEmbed } from "discord.js";
 import { BaseCommand } from "./baseCommand";
-import { Player } from "../player";
+import { Player, PlayResult } from "../player";
 import { AudioFilter } from "../transcoder";
 
 export class PlayCommand extends BaseCommand {
@@ -43,7 +43,8 @@ export class PlayCommand extends BaseCommand {
         const query = interaction.options.getString(PlayCommand._queryOption, true);
         const modification = interaction.options.getInteger(PlayCommand._modificationOption) as AudioFilter | null;
 
-        const data = await this._player.play(query, modification ? [modification] : undefined);
+        const playData = await this._player.play(query, modification ? [modification] : undefined);
+        const data: PlayResult = playData[0];
 
         const embed = new MessageEmbed()
             .setTitle(data.isPlayingNow ? "Now playing" : "Queued")
@@ -64,6 +65,17 @@ export class PlayCommand extends BaseCommand {
 
             embed.addField("Time until play", queueEndTimeFormatted, true);
             embed.addField("Time until queue end", queueEndTimeFormatted2, true);
+        }
+
+        // TODO: rework all this embed (also need splitting)
+        if (playData.length > 1) {
+            playData.forEach((singleVideoPlayData, index) => {
+                // Skip first for now as it's handled before.
+                if (index == 0)
+                    return;
+
+                embed.addField("Queued song from playlist", singleVideoPlayData.title);
+            });
         }
 
         await interaction.editReply({ embeds: [embed] });

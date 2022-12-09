@@ -3,6 +3,7 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
 import { CommandInteraction } from "discord.js";
 
+/** Clear command, which clears current player queue. */
 export class ClearCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 

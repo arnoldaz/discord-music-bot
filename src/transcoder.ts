@@ -8,7 +8,7 @@ export enum AudioFilter {
     Nightcore,
     /** Distorts the audio. */
     Earrape,
-    /** Plays audio from different direcions. */
+    /** Plays audio from different directions. */
     Audio8D,
     /** Adds single delay chorus effect to the audio. */
     Chorus,

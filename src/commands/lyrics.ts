@@ -42,7 +42,7 @@ export class LyricsCommand extends BaseCommand {
     }
 
     // Copied deprecated discord.js method for now
-    private static splitMessage(text: string, { maxLength = 2_000, char = '\n', prepend = '', append = '' } = {}) {
+    public static splitMessage(text: string, { maxLength = 2_000, char = '\n', prepend = '', append = '' } = {}) {
         text = Util.verifyString(text);
         if (text.length <= maxLength) return [text];
         let splitText = [text];

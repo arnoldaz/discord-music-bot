@@ -23,17 +23,13 @@ import { YoutubeSearcher } from "./search";
 import { StreamDownloader } from "./downloader";
 import { Seconds, Timer } from "./utils/timer";
 
-/**
- * Supported player audio types.
- */
+/** Supported player audio types. */
 export enum AudioType {
     Song,
     Radio,
 }
 
-/**
- * Supported player audio types combined interface.
- */
+/** Supported player audio types combined interface. */
 export type AudioData = SongData | RadioData;
 
 /**
@@ -42,7 +38,6 @@ export type AudioData = SongData | RadioData;
 export interface SongData {
     type: AudioType.Song;
     videoId: string;
-    stream: Readable;
     title: string;
     durationInSeconds: number;
     formattedDuration: string;
@@ -198,34 +193,41 @@ export class Player {
      * @param filters List of filters to be applied to audio.
      * @returns A {@link PlayResult} object containing played or queued song information.
      */
-    public async play(query: string, filters?: AudioFilter[]): Promise<PlayResult> {
+    public async play(query: string, filters?: AudioFilter[]): Promise<PlayResult[]> {
         const searchData = await YoutubeSearcher.search(query);
         const playNow = !this._isPlaying;
+        const playResults: PlayResult[] = [];
+        let firstVideoIsPlaying = false;
 
-        const songData: SongData = {
-            type: AudioType.Song,
-            videoId: searchData.id,
-            stream: await StreamDownloader.getStream(searchData.id),
-            title: searchData.title,
-            durationInSeconds: searchData.durationInSeconds,
-            formattedDuration: searchData.formattedDuration,
-            thumbnailUrl: searchData.thumbnailUrl,
-            filters,
-        };
+        for (const singleVideoData of searchData) {
+            const songData: SongData = {
+                type: AudioType.Song,
+                videoId: singleVideoData.id,
+                title: singleVideoData.title,
+                durationInSeconds: singleVideoData.durationInSeconds,
+                formattedDuration: singleVideoData.formattedDuration,
+                thumbnailUrl: singleVideoData.thumbnailUrl,
+                filters,
+            };
 
-        if (playNow)
-            this.playNow(songData);
-        else
-            this.addToQueue(songData);
+            if (playNow && !firstVideoIsPlaying) {
+                firstVideoIsPlaying = true;
+                await this.playNow(songData);
+            }
+            else
+                this.addToQueue(songData);
 
-        return {
-            videoId: songData.videoId,
-            isPlayingNow: playNow,
-            title: songData.title,
-            durationInSeconds: songData.durationInSeconds,
-            formattedDuration: searchData.formattedDuration,
-            thumbnailUrl: songData.thumbnailUrl,
-        };
+            playResults.push({
+                videoId: songData.videoId,
+                isPlayingNow: playNow,
+                title: songData.title,
+                durationInSeconds: songData.durationInSeconds,
+                formattedDuration: singleVideoData.formattedDuration,
+                thumbnailUrl: songData.thumbnailUrl,
+            });
+        }
+
+        return playResults;
     }
 
     /**
@@ -234,10 +236,10 @@ export class Player {
      * @param audioData Song data to be played.
      * @param startAtSeconds Start audio stream at specified starting point in seconds.
      */
-    private playNow(audioData: AudioData, startAtSeconds = 0): void {
+    private async playNow(audioData: AudioData, startAtSeconds = 0): Promise<void> {
         const transcodedStream = audioData.type == AudioType.Radio
             ? this._transcoder.getOpusRadioStream(audioData.radioStation)
-            : this._transcoder.transcodeToOpus(audioData.stream, audioData.filters, startAtSeconds);
+            : this._transcoder.transcodeToOpus(await StreamDownloader.getStream(audioData.videoId), audioData.filters, startAtSeconds);
         const resource = this.createOpusAudioResource(transcodedStream);
         this._audioPlayer!.play(resource);
         this._nowPlaying = audioData;
@@ -276,7 +278,7 @@ export class Player {
         }
 
         // Restarts song from new starting point.
-        this.playNow(this._nowPlaying!, seconds);
+        await this.playNow(this._nowPlaying!, seconds);
         return true;
     }
 
@@ -311,7 +313,7 @@ export class Player {
      * Plays or queues radio station to audio player.
      * @param radioStation Radio station to play or queue.
      */
-    public playRadio(radioStation: RadioStation): void {
+    public async playRadio(radioStation: RadioStation): Promise<void> {
         const playNow = !this._isPlaying;
         const radioData: RadioData = {
             type: AudioType.Radio,
@@ -320,7 +322,7 @@ export class Player {
         };
 
         if (playNow)
-            this.playNow(radioData);
+            await this.playNow(radioData);
         else
             this.addToQueue(radioData);
     }
@@ -396,7 +398,7 @@ export class Player {
     private createAudioPlayer(): AudioPlayer {
         const audioPlayer = createAudioPlayer();
 
-        audioPlayer.on(AudioPlayerStatus.Idle, (oldState: AudioPlayerState) => {
+        audioPlayer.on(AudioPlayerStatus.Idle, async (oldState: AudioPlayerState) => {
             if (oldState.status == AudioPlayerStatus.Buffering) {
                 Logger.logError("Buffering failed and audio player reset back to idle.");
             }
@@ -408,7 +410,7 @@ export class Player {
 
             const nextSong = this.getNextSong();
             if (nextSong)
-                this.playNow(nextSong);
+                await this.playNow(nextSong);
         });
 
         audioPlayer.on(AudioPlayerStatus.Playing, () => {
