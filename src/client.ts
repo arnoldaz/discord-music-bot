@@ -1,4 +1,4 @@
-import { Client, Collection, Intents, Interaction } from "discord.js";
+import { Client, Collection, Events, GatewayIntentBits, Interaction } from "discord.js";
 import { BaseCommand } from "./commands/baseCommand";
 import { Logger } from "./logger";
 
@@ -17,18 +17,18 @@ export class DiscordClient {
      */
     public constructor(commands: BaseCommand[]) {
         this._client = new Client({
-            intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_VOICE_STATES],
+            intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
         });
         this._commandsMap = commands.reduce(
             (collection, command) => collection.set(command.data.name, command),
             new Collection<string, BaseCommand>()
         );
 
-        this._client.on("ready", () => {
+        this._client.on(Events.ClientReady, () => {
             Logger.logInfo("Bot is ready.");
         });
 
-        this._client.on("interactionCreate", async (interaction: Interaction) => {
+        this._client.on(Events.InteractionCreate, async (interaction: Interaction) => {
             if (!interaction.isCommand()) {
                 Logger.logError("Interaction is not a command.");
                 return;

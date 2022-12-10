@@ -191,9 +191,10 @@ export class Player {
      * Plays or queues song to audio player.
      * @param query Song search query or direct url.
      * @param filters List of filters to be applied to audio.
+     * @param forcePlayNext Whether to force play song as the next in queue.
      * @returns A {@link PlayResult} object containing played or queued song information.
      */
-    public async play(query: string, filters?: AudioFilter[]): Promise<PlayResult[]> {
+    public async play(query: string, filters?: AudioFilter[], forcePlayNext?: boolean): Promise<PlayResult[]> {
         const searchData = await YoutubeSearcher.search(query);
         const playNow = !this._isPlaying;
         const playResults: PlayResult[] = [];
@@ -214,8 +215,9 @@ export class Player {
                 firstVideoIsPlaying = true;
                 await this.playNow(songData);
             }
-            else
-                this.addToQueue(songData);
+            else {
+                this.addToQueue(songData, forcePlayNext === true);
+            }
 
             playResults.push({
                 videoId: songData.videoId,
@@ -351,9 +353,13 @@ export class Player {
     /**
      * Adds audio to queue.
      * @param audioData Audio data to queue.
+     * @param addToStart Whether to add audio to start or the end of the queue.
      */
-    private addToQueue(audioData: AudioData): void {
-        this._queue.push(audioData);
+    private addToQueue(audioData: AudioData, addToStart = false): void {
+        if (addToStart)
+            this._queue.unshift(audioData);
+        else 
+            this._queue.push(audioData);
     }
 
     /**

@@ -1,7 +1,7 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
-import { CommandInteraction, Formatters, MessageEmbed, Util } from "discord.js";
+import { CommandInteraction, inlineCode, EmbedBuilder, verifyString } from "discord.js";
 
 export class LyricsCommand extends BaseCommand {
     public data: SlashCommandBuilder;
@@ -25,10 +25,10 @@ export class LyricsCommand extends BaseCommand {
         }
 
         const [initialDesc, ...otherDescs] = LyricsCommand.splitMessage(lyrics, { maxLength: 4096 });
-        const embed = new MessageEmbed().setDescription(initialDesc);
+        const embed = new EmbedBuilder().setDescription(initialDesc);
 
         await interaction.editReply({
-            content: `Found lyrics for ${Formatters.inlineCode(song!.title)}:`,
+            content: `Found lyrics for ${inlineCode(song!.title)}:`,
             embeds: [embed],
         });
 
@@ -43,7 +43,7 @@ export class LyricsCommand extends BaseCommand {
 
     // Copied deprecated discord.js method for now
     public static splitMessage(text: string, { maxLength = 2_000, char = '\n', prepend = '', append = '' } = {}) {
-        text = Util.verifyString(text);
+        text = verifyString(text);
         if (text.length <= maxLength) return [text];
         let splitText = [text];
         if (Array.isArray(char)) {

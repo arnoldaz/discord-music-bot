@@ -1,7 +1,7 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
-import { CommandInteraction, Formatters } from "discord.js";
+import { CommandInteraction, inlineCode } from "discord.js";
 import { RadioStation } from "../transcoder";
 
 export class RadioCommand extends BaseCommand {
@@ -29,9 +29,9 @@ export class RadioCommand extends BaseCommand {
 
         await interaction.deferReply();
 
-        const radioStation = interaction.options.getInteger(RadioCommand._stationOption)! as RadioStation;
+        const radioStation = interaction.options.get(RadioCommand._stationOption, true).value as RadioStation;
         await this._player.playRadio(radioStation);
 
-        await interaction.editReply(`Playing radio station ${Formatters.inlineCode(Player.radioStationNames[radioStation])}`);
+        await interaction.editReply(`Playing radio station ${inlineCode(Player.radioStationNames[radioStation])}`);
     }
 }

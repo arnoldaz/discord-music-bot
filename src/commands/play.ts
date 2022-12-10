@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { CommandInteraction, Formatters, MessageEmbed } from "discord.js";
+import { CommandInteraction, inlineCode, EmbedBuilder } from "discord.js";
 import { BaseCommand } from "./baseCommand";
 import { Player, PlayResult } from "../player";
 import { AudioFilter } from "../transcoder";
@@ -7,6 +7,7 @@ import { AudioFilter } from "../transcoder";
 export class PlayCommand extends BaseCommand {
     private static _queryOption = "query";
     private static _modificationOption = "modification";
+    private static readonly forcePlayNextOption = "force-play-next";
     public data: SlashCommandBuilder;
 
     public constructor(player: Player) {
@@ -32,6 +33,9 @@ export class PlayCommand extends BaseCommand {
                 AudioFilter.Chorus3d
             ].map(filter => ({ name: AudioFilter[filter], value: filter })))
         );
+        this.data.addBooleanOption(option => option
+            .setName(PlayCommand.forcePlayNextOption)
+            .setDescription("Forces to play song as the first in the queue."));
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
@@ -40,17 +44,18 @@ export class PlayCommand extends BaseCommand {
 
         await interaction.deferReply();
 
-        const query = interaction.options.getString(PlayCommand._queryOption, true);
-        const modification = interaction.options.getInteger(PlayCommand._modificationOption) as AudioFilter | null;
+        const query = interaction.options.get(PlayCommand._queryOption, true).value as string;
+        const modification = interaction.options.get(PlayCommand._modificationOption)?.value as AudioFilter | undefined;
+        const forcePlayNext = interaction.options.get(PlayCommand.forcePlayNextOption)?.value as boolean | undefined;
 
-        const playData = await this._player.play(query, modification ? [modification] : undefined);
+        const playData = await this._player.play(query, modification ? [modification] : undefined, forcePlayNext);
         const data: PlayResult = playData[0];
 
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle(data.isPlayingNow ? "Now playing" : "Queued")
-            .setDescription(Formatters.inlineCode(data.title))
+            .setDescription(inlineCode(data.title))
             .setThumbnail(data.thumbnailUrl)
-            .addField("Duration", data.formattedDuration)
+            .addFields({ name: "Duration", value: data.formattedDuration })
 
         if (!data.isPlayingNow) {
             const queueEndTime = this._player.getQueueEndTime();
@@ -63,9 +68,13 @@ export class PlayCommand extends BaseCommand {
             date2.setSeconds(queueEndTime!);
             const queueEndTimeFormatted2 = date2.toISOString().substring(11, 19);
 
-            embed.addField("Time until play", queueEndTimeFormatted, true);
-            embed.addField("Time until queue end", queueEndTimeFormatted2, true);
+            embed.addFields(
+                { name: "Time until play", value: queueEndTimeFormatted, inline: true },
+                { name: "Time until queue end", value: queueEndTimeFormatted2, inline: true });
         }
+
+        // Temp variable to add last "..." field once.
+        let isEndFieldAdded = false;
 
         // TODO: rework all this embed (also need splitting)
         if (playData.length > 1) {
@@ -74,7 +83,17 @@ export class PlayCommand extends BaseCommand {
                 if (index == 0)
                     return;
 
-                embed.addField("Queued song from playlist", singleVideoPlayData.title);
+                // Field limit is 25, since there are others, limit to 20 here.
+                if (index > 20) {
+                    if (!isEndFieldAdded) {
+                        embed.addFields({ name: `And ${playData.length - 20} more songs`, value: "..." });
+                        isEndFieldAdded = true;
+                    }
+
+                    return;
+                }
+
+                embed.addFields({ name: `Queued song from playlist ${index}`, value: singleVideoPlayData.title });
             });
         }
 

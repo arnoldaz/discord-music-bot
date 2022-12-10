@@ -21,7 +21,7 @@ export class SeekCommand extends BaseCommand {
 
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
-        const seconds = interaction.options.getInteger("seconds")!;
+        const seconds = interaction.options.get("seconds", true).value as number;
         this._player.seek(seconds);
         await interaction.editReply(`Seeked to ${seconds} seconds.`);
     }

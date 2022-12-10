@@ -1,7 +1,7 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { AudioType, Player } from "../player";
-import { CommandInteraction, Formatters } from "discord.js";
+import { CommandInteraction, inlineCode } from "discord.js";
 
 export class NowPlayingCommand extends BaseCommand {
     public data: SlashCommandBuilder;
@@ -24,14 +24,14 @@ export class NowPlayingCommand extends BaseCommand {
             return;
         }
 
-        const title = Formatters.inlineCode(currentSong.title);
+        const title = inlineCode(currentSong.title);
 
         const date = new Date(0);
         date.setSeconds(currentTime);
         const currentFormattedTime = date.toISOString().substring(11, 19);
 
         const totalFormattedTime = currentSong.type == AudioType.Song 
-            ? ` (${Formatters.inlineCode(currentFormattedTime)} ${Formatters.inlineCode(currentSong.formattedDuration)})` 
+            ? ` (${inlineCode(currentFormattedTime)} ${inlineCode(currentSong.formattedDuration)})` 
             : "";
 
         await interaction.editReply(`Currently playing: ${title}${totalFormattedTime}`);

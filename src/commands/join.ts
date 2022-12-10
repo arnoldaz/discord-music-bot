@@ -1,7 +1,7 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
-import { CommandInteraction, StageChannel, VoiceChannel, Formatters } from "discord.js";
+import { CommandInteraction, StageChannel, VoiceChannel, inlineCode, ChannelType } from "discord.js";
 
 export class JoinCommand extends BaseCommand {
     private static _nameOption = "name";
@@ -20,7 +20,7 @@ export class JoinCommand extends BaseCommand {
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
-        const channelName = interaction.options.getString(JoinCommand._nameOption)?.toLowerCase();
+        const channelName = (interaction.options.get(JoinCommand._nameOption)?.value as string)?.toLowerCase();
         const voiceChannel = channelName
             ? await this.getSpecifiedChannel(interaction, channelName)
             : await this.getUserChannel(interaction);
@@ -30,7 +30,7 @@ export class JoinCommand extends BaseCommand {
 
         await interaction.deferReply();
         await this._player.connect(voiceChannel);
-        await interaction.editReply(`Connected to voice channel: ${Formatters.inlineCode(voiceChannel.name)}`);
+        await interaction.editReply(`Connected to voice channel: ${inlineCode(voiceChannel.name)}`);
     }
 
     private async getSpecifiedChannel(interaction: CommandInteraction, channelName: string): Promise<VoiceChannel | StageChannel | null> {
@@ -44,13 +44,13 @@ export class JoinCommand extends BaseCommand {
         }
 
         const voiceChannel = channels
-            .filter(channel => channel.type == "GUILD_VOICE" || channel.type == "GUILD_STAGE_VOICE")
+            .filter(channel => channel.type === ChannelType.GuildVoice || channel.type === ChannelType.GuildStageVoice)
             .filter(channel => channel.name.toLowerCase() == channelName)
             .first() as VoiceChannel | StageChannel | undefined;
 
         if (!voiceChannel) {
             await interaction.reply({
-                content: `No voice channel exists with specified name: ${Formatters.inlineCode(channelName)}`,
+                content: `No voice channel exists with specified name: ${inlineCode(channelName)}`,
                 ephemeral: true,
             });
             return null;

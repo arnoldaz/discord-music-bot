@@ -1,7 +1,7 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { AudioType, Player } from "../player";
-import { CommandInteraction, Formatters } from "discord.js";
+import { CommandInteraction, inlineCode } from "discord.js";
 
 export class RemoveCommand extends BaseCommand {
     private static _idOption = "id";
@@ -22,7 +22,7 @@ export class RemoveCommand extends BaseCommand {
 
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
-        const id = interaction.options.getInteger(RemoveCommand._idOption)!;
+        const id = interaction.options.get(RemoveCommand._idOption, true).value as number;
 
         const removedAudio = this._player.removeSong(id);
         if (!removedAudio) {
@@ -35,7 +35,7 @@ export class RemoveCommand extends BaseCommand {
             : removedAudio.title;
 
         await interaction.editReply(
-            `Queue item with ID ${Formatters.inlineCode(id.toString())} and title ${Formatters.inlineCode(title)} removed.`
+            `Queue item with ID ${inlineCode(id.toString())} and title ${inlineCode(title)} removed.`
         );
     }
 }

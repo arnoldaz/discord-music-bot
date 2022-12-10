@@ -5,7 +5,7 @@ import { Logger } from "./logger";
 
 export async function registerCommands(commands: BaseCommand[], global = false) {
     const commandsData = commands.map(command => command.data.toJSON());
-    const rest = new REST({ version: "9" }).setToken(process.env.BOT_TOKEN!);
+    const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN!);
 
     try {
         await rest.put(
