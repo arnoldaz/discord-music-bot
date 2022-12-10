@@ -20,13 +20,9 @@ export class Logger {
 
     private static currentLogLevel = LogLevel.Info;
 
-    private static ensureLogFolderExists(): void {
+    private static ensureLogFileExists(): void {
         if (!fs.existsSync(this.logFolderPath))
             fs.mkdirSync(this.logFolderPath);
-    }
-
-    private static ensureLogFileExists(): void {
-        this.ensureLogFolderExists();
 
         if (!fs.existsSync(this.logFilePath))
             fs.writeFileSync(this.logFilePath, this.formatLogMessage("Log file created.\n", LogLevel.Info), { flag: "w+" });
