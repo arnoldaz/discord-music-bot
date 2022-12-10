@@ -23,6 +23,8 @@ import { SeekCommand } from "./commands/seek";
 dotenv.config();
 
 (async () => {
+    Logger.logInfo(`${"=".repeat(25)} Starting Discord Music bot ${"=".repeat(25)}`);
+    
     const transcoder = new Transcoder();
     const player = new Player(transcoder);
 
