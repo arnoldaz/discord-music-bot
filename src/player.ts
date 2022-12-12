@@ -213,7 +213,7 @@ export class Player {
 
             if (playNow && !firstVideoIsPlaying) {
                 firstVideoIsPlaying = true;
-                await this.playNow(songData);
+                await this.playNow(songData, singleVideoData.blockedSegmentData.startSegmentEndTime);
             }
             else {
                 this.addToQueue(songData, forcePlayNext === true);
@@ -242,6 +242,7 @@ export class Player {
         const transcodedStream = audioData.type == AudioType.Radio
             ? this._transcoder.getOpusRadioStream(audioData.radioStation)
             : this._transcoder.transcodeToOpus(await StreamDownloader.getStream(audioData.videoId), audioData.filters, startAtSeconds);
+
         const resource = this.createOpusAudioResource(transcodedStream);
         this._audioPlayer!.play(resource);
         this._nowPlaying = audioData;
@@ -279,7 +280,11 @@ export class Player {
             return false;
         }
 
-        // Restarts song from new starting point.
+        // Ends current song
+        this._isPlaying = false;
+        this._timer.endTimer();
+        
+        // Restarts song from a new starting point.
         await this.playNow(this._nowPlaying!, seconds);
         return true;
     }
@@ -428,7 +433,7 @@ export class Player {
         audioPlayer.on("error", (error: AudioPlayerError) => {
             Logger.logError(`Error occured on audio player: "${error.message}" from resource "${JSON.stringify(error.resource.metadata)}"`);
         });
-
+        
         return audioPlayer;
     }
 

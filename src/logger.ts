@@ -19,6 +19,18 @@ export class Logger {
     };
 
     private static currentLogLevel = LogLevel.Info;
+    private static isInitialized = false;
+
+    private static initializeProcessCallbacks(): void {
+        if (this.isInitialized)
+            return;
+
+        process.addListener("uncaughtException", (err) => {
+            this.log(`Uncaught exception: ${err}\n${err.stack ?? "No stack trace available."}`, LogLevel.Error);
+        });
+
+        this.isInitialized = true;
+    }
 
     private static ensureLogFileExists(): void {
         if (!fs.existsSync(this.logFolderPath))
@@ -37,6 +49,7 @@ export class Logger {
     }
 
     private static log(message: string, logLevel: LogLevel): void {
+        this.initializeProcessCallbacks();
         this.ensureLogFileExists();
         const formattedMessage = this.formatLogMessage(message, logLevel);
 

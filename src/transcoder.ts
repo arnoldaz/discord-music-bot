@@ -71,6 +71,7 @@ export class Transcoder {
             const timeString = this.convertSecondsToTimeString(startAtSeconds);
             transcoderArgs.push("-ss", timeString);
             Logger.logInfo(`Seeking to ${timeString} (${startAtSeconds} seconds).`);
+            // transcoderArgs.push("-to", this.convertSecondsToTimeString(18)); // Doesn't work
         }
 
         const transcoder = new FFmpeg({ args: transcoderArgs });
@@ -79,8 +80,12 @@ export class Transcoder {
         const opusEncoder = this.getOpusEncoder();
         const outputStream = outputFfmpeg.pipe(opusEncoder);
         outputStream.on("close", () => {
-            transcoder.destroy();
-            opusEncoder.destroy();
+            if (!transcoder.destroyed)
+                transcoder.destroy();
+            if (!opusEncoder.destroyed)
+                opusEncoder.destroy();
+            if (!stream.destroyed)
+                stream.destroy();
         });
 
         return outputStream;
