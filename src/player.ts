@@ -232,6 +232,33 @@ export class Player {
         return playResults;
     }
 
+    public async playCustom(url: string): Promise<PlayResult> {
+        const playNow = !this._isPlaying;
+
+        const songData: SongData = {
+            type: AudioType.Song,
+            videoId: "",
+            title: "Pantheon zama",
+            durationInSeconds: 10,
+            formattedDuration: "No idea",
+            thumbnailUrl: "",
+        };
+
+        const transcodedStream = this._transcoder.getOpusVideoStream(url);
+        const resource = this.createOpusAudioResource(transcodedStream);
+        this._audioPlayer!.play(resource);
+        this._nowPlaying = songData;
+
+        return {
+            videoId: songData.videoId,
+            isPlayingNow: playNow,
+            title: songData.title,
+            durationInSeconds: songData.durationInSeconds,
+            formattedDuration: songData.formattedDuration,
+            thumbnailUrl: songData.thumbnailUrl,
+        };
+    }
+
     /**
      * Force-plays song on audio player.
      * {@link Player.connect} must be called beforehand to initialize audio player and setup connection.

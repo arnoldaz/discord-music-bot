@@ -10,3 +10,4 @@ export * from "./remove";
 export * from "./shuffle";
 export * from "./skip";
 export * from "./lyrics";
+export * from "./playCustom";

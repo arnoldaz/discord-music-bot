@@ -98,7 +98,7 @@ export class YoutubeSearcher {
         const startSegment = segments.find(segment => segment.startTime < this.maxDeviation);
         const endSegment = segments.find(segment => segment.endTime > videoDurationInSeconds - this.maxDeviation);
 
-        Logger.logInfo(`SponsorBlock segments: start at "${startSegment}", end at "${endSegment}"`);
+        Logger.logInfo(`SponsorBlock segments: start at "${JSON.stringify(startSegment)}", end at "${JSON.stringify(endSegment)}"`);
 
         return {
             startSegmentEndTime: startSegment?.endTime ?? 0,

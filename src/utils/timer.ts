@@ -1,3 +1,4 @@
+import { Logger } from '../logger';
 
 /** Seconds type for easier readability. */
 export type Seconds = number;
@@ -13,7 +14,8 @@ export class Timer {
      */
     public startTimer(): void {
         if (this._isStarted)
-            throw new Error("Timer is already started.");
+            Logger.logError("Timer is already started.");
+            // throw new Error("Timer is already started.");
 
         this._startTime = process.hrtime.bigint();
         this._isStarted = true;
@@ -26,7 +28,8 @@ export class Timer {
      */
     public getTime(): Seconds {
         if (!this._isStarted)
-            throw new Error("Timer is not started.");
+            Logger.logError("Timer is not started.");
+            // throw new Error("Timer is not started.");
 
         const endTime = process.hrtime.bigint();
         const nanoSecondsPassed = endTime - this._startTime;

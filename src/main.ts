@@ -17,6 +17,7 @@ import {
     RemoveCommand,
     ShuffleCommand,
     SkipCommand,
+    PlayCustomCommand
 } from "./commands";
 import { SeekCommand } from "./commands/seek";
 
@@ -41,6 +42,7 @@ dotenv.config();
         new JoinCommand(player),
         new LyricsCommand(player),
         new SeekCommand(player),
+        new PlayCustomCommand(player),
     ];
 
     if (process.argv.slice(2).some(arg => arg.includes("register"))) {

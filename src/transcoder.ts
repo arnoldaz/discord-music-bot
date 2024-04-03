@@ -112,6 +112,25 @@ export class Transcoder {
         return outputStream;
     }
 
+    public getOpusVideoStream(url: string): Readable {
+        const transcoder = new FFmpeg({
+            args: ["-i", "D:\\Source\\discord-music-bot\\local\\pantheon-zama.mp4", ...Transcoder._defaultFFmpegArgs, "-ss", "00:00:00"],
+        });
+
+        const opusEncoder = this.getOpusEncoder();
+        Logger.logInfo(JSON.stringify(opusEncoder));
+
+        const outputStream = transcoder.pipe(opusEncoder);
+        Logger.logInfo(JSON.stringify(outputStream));
+        outputStream.on("close", () => {
+            Logger.logInfo("video close stream");
+            transcoder.destroy();
+            opusEncoder.destroy();
+        });
+
+        return outputStream;
+    }
+
     /**
      * Converts number of seconds to HH:MM:SS format.
      * @param seconds Number of seconds.

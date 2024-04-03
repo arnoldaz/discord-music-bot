@@ -8,16 +8,16 @@
     "lint-fix": "eslint src/** --ext .ts --fix"
   },
   "dependencies": {
-    "@discordjs/opus": "0.8.0",
-    "@discordjs/voice": "0.14.0",
-    "axios": "1.2.1",
-    "discord.js": "14.7.1",
-    "dotenv": "16.0.3",
-    "libsodium-wrappers": "0.7.10",
-    "prism-media": "1.3.4",
-    "sponsorblock-api": "0.2.2",
-    "youtube-sr": "4.3.4",
-    "ytdl-core": "4.11.2"
+    "@discordjs/opus": "0.9.0",
+    "@discordjs/voice": "0.16.1",
+    "axios": "1.6.8",
+    "discord.js": "14.14.1",
+    "dotenv": "16.4.5",
+    "libsodium-wrappers": "0.7.13",
+    "prism-media": "1.3.5",
+    "sponsorblock-api": "0.2.4",
+    "youtube-sr": "4.3.10",
+    "ytdl-core": "4.11.5"
   },
   "devDependencies": {
     "@types/node": "18.11.12",
@@ -28,6 +28,6 @@
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-prettier": "4.2.1",
     "prettier": "2.8.1",
-    "typescript": "4.9.4"
+    "typescript": "5.0.2"
   }
 }
