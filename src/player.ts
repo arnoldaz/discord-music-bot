@@ -164,6 +164,7 @@ export class Player {
         if (!this._audioPlayer) {
             Logger.logInfo("Creating audio player.");
             this._audioPlayer = this.createAudioPlayer();
+            Logger.logInfo("Created audio player.");
         }
 
         this._connection = await this.joinChannel(voiceChannel);
