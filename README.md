@@ -4,6 +4,7 @@
 
 - Discord bot application (guide can be found here [here](https://discordjs.guide/preparations/setting-up-a-bot-application.html#creating-your-bot))
 - Node.js `>=16.10`
+- ffmpeg
 
 ## Build and run
 
