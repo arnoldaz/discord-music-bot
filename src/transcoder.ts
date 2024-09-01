@@ -73,10 +73,10 @@ export class Transcoder {
             Logger.logInfo(`Seeking to ${timeString} (${startAtSeconds} seconds).`);
             // transcoderArgs.push("-to", this.convertSecondsToTimeString(18)); // Doesn't work
         }
-
+        
         const transcoder = new FFmpeg({ args: transcoderArgs });
         const outputFfmpeg = stream.pipe(transcoder);
-
+        
         const opusEncoder = this.getOpusEncoder();
         const outputStream = outputFfmpeg.pipe(opusEncoder);
         outputStream.on("close", () => {

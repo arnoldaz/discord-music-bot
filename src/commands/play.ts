@@ -48,7 +48,7 @@ export class PlayCommand extends BaseCommand {
         const modification = interaction.options.get(PlayCommand._modificationOption)?.value as AudioFilter | undefined;
         const forcePlayNext = interaction.options.get(PlayCommand.forcePlayNextOption)?.value as boolean | undefined;
 
-        const playData = await this._player.play(query, modification ? [modification] : undefined, forcePlayNext);
+        const playData = await this._player.play(query, modification !== undefined ? [modification] : undefined, forcePlayNext);
         const data: PlayResult = playData[0];
 
         const embed = new EmbedBuilder()
