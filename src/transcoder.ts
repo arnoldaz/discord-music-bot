@@ -67,12 +67,12 @@ export class Transcoder {
             Logger.logInfo(`Added filter string: ${filterString}`);
         }
 
-        // if (startAtSeconds && startAtSeconds > 0) {
-        //     const timeString = this.convertSecondsToTimeString(startAtSeconds);
-        //     transcoderArgs.push("-ss", timeString);
-        //     Logger.logInfo(`Seeking to ${timeString} (${startAtSeconds} seconds).`);
-        //     // transcoderArgs.push("-to", this.convertSecondsToTimeString(18)); // Doesn't work
-        // }
+        if (startAtSeconds && startAtSeconds > 0) {
+            const timeString = this.convertSecondsToTimeString(startAtSeconds);
+            transcoderArgs.push("-ss", timeString);
+            Logger.logInfo(`Seeking to ${timeString} (${startAtSeconds} seconds).`);
+            // transcoderArgs.push("-to", this.convertSecondsToTimeString(18)); // Doesn't work
+        }
         
         const transcoder = new FFmpeg({ args: transcoderArgs });
         const outputFfmpeg = stream.pipe(transcoder);
@@ -86,6 +86,15 @@ export class Transcoder {
                 opusEncoder.destroy();
             if (!stream.destroyed)
                 stream.destroy();
+        });
+        outputStream.on("error", () => {
+            if (!transcoder.destroyed)
+                transcoder.destroy();
+            if (!opusEncoder.destroyed)
+                opusEncoder.destroy();
+            if (!stream.destroyed)
+                stream.destroy();
+            Logger.logError("bad thing")
         });
 
         return outputStream;

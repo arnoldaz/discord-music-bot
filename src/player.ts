@@ -462,6 +462,13 @@ export class Player {
             Logger.logError(`Error occured on audio player: "${error.message}" from resource "${JSON.stringify(error.resource.metadata)}"`);
         });
         
+        audioPlayer.on(AudioPlayerStatus.AutoPaused, () => {
+            Logger.logError("auto paused");
+        });
+        audioPlayer.on(AudioPlayerStatus.Buffering, () => {
+            Logger.logError("buffering");
+        });
+        
         return audioPlayer;
     }
 

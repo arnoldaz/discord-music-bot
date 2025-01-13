@@ -4,7 +4,16 @@ export enum LogLevel {
     Error = 1,
     Warning = 2,
     Info = 3,
+    Debug = 4,
     None = 100,
+}
+
+enum LogColor {
+    None = "",
+    Reset = "\x1b[0m",
+    Red = "\x1b[31m",
+    Yellow = "\x1b[33m",
+    Gray = "\x1b[90m",
 }
 
 export class Logger {
@@ -15,10 +24,19 @@ export class Logger {
         [LogLevel.Error]: "ERROR",
         [LogLevel.Warning]: "WARN",
         [LogLevel.Info]: "INFO",
+        [LogLevel.Debug]: "DEBUG",
         [LogLevel.None]: "NONE",
     };
 
-    private static currentLogLevel = LogLevel.Info;
+    private static readonly logLevelColor: { [_ in LogLevel]: LogColor } = {
+        [LogLevel.Error]: LogColor.Red,
+        [LogLevel.Warning]: LogColor.Yellow,
+        [LogLevel.Info]: LogColor.None,
+        [LogLevel.Debug]: LogColor.Gray,
+        [LogLevel.None]: LogColor.None,
+    };
+
+    private static currentLogLevel = LogLevel.Debug;
     private static isInitialized = false;
 
     private static initializeProcessCallbacks(): void {
@@ -53,7 +71,7 @@ export class Logger {
         this.ensureLogFileExists();
         const formattedMessage = this.formatLogMessage(message, logLevel);
 
-        console.log(formattedMessage);
+        console.log(`${this.logLevelColor[logLevel]}${formattedMessage}${LogColor.Reset}`);
         fs.appendFileSync(this.logFilePath, `${formattedMessage}\n`);
     }
 
@@ -61,18 +79,23 @@ export class Logger {
         this.currentLogLevel = logLevel;
     }
 
+    public static logDebug(message: string): void {
+        if (this.currentLogLevel >= LogLevel.Debug)
+            this.log(message, LogLevel.Debug);
+    }
+
     public static logInfo(message: string): void {
-        if (this.currentLogLevel <= LogLevel.Info)
+        if (this.currentLogLevel >= LogLevel.Info)
             this.log(message, LogLevel.Info);
     }
 
     public static logWarning(message: string): void {
-        if (this.currentLogLevel <= LogLevel.Warning)
+        if (this.currentLogLevel >= LogLevel.Warning)
             this.log(message, LogLevel.Warning);
     }
 
     public static logError(message: string): void {
-        if (this.currentLogLevel <= LogLevel.Error)
+        if (this.currentLogLevel >= LogLevel.Error)
             this.log(message, LogLevel.Error);
     }
 }

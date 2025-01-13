@@ -5,12 +5,13 @@
     "start": "node lib/main.js",
     "register": "node lib/main.js --register",
     "lint": "eslint src/** --ext .ts",
-    "lint-fix": "eslint src/** --ext .ts --fix"
+    "lint-fix": "eslint src/** --ext .ts --fix",
+    "download": "(if not exist bin mkdir bin) && curl -L -o bin/yt-dlp.exe https://github.com/yt-dlp/yt-dlp/releases/download/2025.01.12/yt-dlp.exe"
   },
   "dependencies": {
     "@discordjs/opus": "0.9.0",
     "@discordjs/voice": "0.18.0",
-    "@distube/ytdl-core": "^4.15.1",
+    "@distube/ytdl-core": "4.15.6",
     "axios": "1.7.7",
     "discord.js": "14.16.3",
     "dotenv": "16.4.5",
