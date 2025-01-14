@@ -82,7 +82,7 @@ export class Player {
 
     private _timer = new Timer();
 
-    private static _radioStationNames: { [station in RadioStation]: string } = {
+    private static _radioStationNames: Record<RadioStation, string> = {
         [RadioStation.PowerHitRadio]: "Power Hit Radio",
         [RadioStation.M1]: "M-1",
     };
@@ -92,7 +92,7 @@ export class Player {
     /**
      * Gets dictionary of radio station display names.
      */
-    public static get radioStationNames(): { [station in RadioStation]: string } {
+    public static get radioStationNames(): Record<RadioStation, string> {
         return this._radioStationNames;
     }
 

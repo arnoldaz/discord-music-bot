@@ -4,7 +4,6 @@ import { Logger } from "./logger";
 
 /** Main Discord client class. */
 export class DiscordClient {
-
     /** Internal discord.js client. */
     private _client: Client;
 
@@ -49,7 +48,8 @@ export class DiscordClient {
 
                 if (interaction.replied || interaction.deferred)
                     await interaction.followUp({ content: errorString, ephemeral: true });
-                else await interaction.reply({ content: errorString, ephemeral: true });
+                else
+                    await interaction.reply({ content: errorString, ephemeral: true });
             }
         });
     }

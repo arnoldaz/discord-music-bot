@@ -21,8 +21,7 @@ export class YoutubeSearcher {
     /** Regex that matches direct playlist link. */
     private static readonly playlistRegex = /^https?:\/\/(www.)?youtube.com\/playlist\?list=((PL|FL|UU|LL|RD|OL)[a-zA-Z0-9-_]*)$/;
     /** Regex that matches video link in a playlist. */
-    private static readonly playlistVideoRegex = 
-        /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w-]+\?v=|embed\/|v\/)?)([\w-]+)[?&]list=((PL|FL|UU|LL|RD|OL)[a-zA-Z0-9-_]*)(&index=[0-9])+$/;
+    private static readonly playlistVideoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w-]+\?v=|embed\/|v\/)?)([\w-]+)[?&]list=((PL|FL|UU|LL|RD|OL)[a-zA-Z0-9-_]*)(&index=[0-9])+$/;
     /** Regex that matches video link. */
     private static readonly videoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w-]+\?v=|embed\/|v\/)?)([\w-]+)(\S+)?$/;
 

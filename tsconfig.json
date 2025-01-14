@@ -8,6 +8,8 @@
     "lib": ["dom", "es6", "ESNext"],
     "esModuleInterop": true,
     "sourceMap": true,
+    // Remove once fixed https://github.com/discordjs/discord.js/issues/10577
+		"skipLibCheck": true,
   },
   "include": ["src"],
   "exclude": ["node_modules"]
