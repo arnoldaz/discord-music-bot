@@ -5,8 +5,9 @@ import { Player, PlayResult } from "../player";
 import { AudioFilter } from "../transcoder";
 
 export class PlayCommand extends BaseCommand {
-    private static _queryOption = "query";
-    private static _modificationOption = "modification";
+    private static readonly _queryOption = "query";
+    private static readonly _modificationOption = "modification";
+    private static readonly _volumeOption = "volume";
     private static readonly forcePlayNextOption = "force-play-next";
     public data: SlashCommandBuilder;
 
@@ -36,6 +37,9 @@ export class PlayCommand extends BaseCommand {
         this.data.addBooleanOption(option => option
             .setName(PlayCommand.forcePlayNextOption)
             .setDescription("Forces to play song as the first in the queue."));
+        this.data.addIntegerOption(option => option
+            .setName(PlayCommand._volumeOption)
+            .setDescription("Modifies the volume of the song (default is 100)"));
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
@@ -47,8 +51,9 @@ export class PlayCommand extends BaseCommand {
         const query = interaction.options.get(PlayCommand._queryOption, true).value as string;
         const modification = interaction.options.get(PlayCommand._modificationOption)?.value as AudioFilter | undefined;
         const forcePlayNext = interaction.options.get(PlayCommand.forcePlayNextOption)?.value as boolean | undefined;
+        const volume = interaction.options.get(PlayCommand._volumeOption)?.value as number ?? 100;
 
-        const playData = await this._player.play(query, modification !== undefined ? [modification] : undefined, forcePlayNext);
+        const playData = await this._player.play(query, modification !== undefined ? [modification] : undefined, forcePlayNext, volume);
         const data: PlayResult = playData[0];
 
         const embed = new EmbedBuilder()

@@ -19,8 +19,8 @@ import { AudioFilter, RadioStation, Transcoder } from "./transcoder";
 import { Readable } from "stream";
 import { ExtendedDataScraper } from "./scraper";
 import { LyricsScraper } from "./lyrics";
-import { YoutubeSearcher } from "./search";
-import { StreamDownloader } from "./downloader";
+import { search } from "./search";
+import { getStream } from "./downloader";
 import { Seconds, Timer } from "./utils/timer";
 
 /** Supported player audio types. */
@@ -108,7 +108,7 @@ export class Player {
      * Returns undefined if nothing is playing.
      */
     public get currentlyPlaying(): AudioData | undefined {
-        if (!this._isPlaying) 
+        if (!this._isPlaying)
             return undefined;
 
         return this._nowPlaying;
@@ -195,8 +195,8 @@ export class Player {
      * @param forcePlayNext Whether to force play song as the next in queue.
      * @returns A {@link PlayResult} object containing played or queued song information.
      */
-    public async play(query: string, filters?: AudioFilter[], forcePlayNext?: boolean): Promise<PlayResult[]> {
-        const searchData = await YoutubeSearcher.search(query);
+    public async play(query: string, filters?: AudioFilter[], forcePlayNext?: boolean, volume?: number): Promise<PlayResult[]> {
+        const searchData = await search(query);
         const playNow = !this._isPlaying;
         const playResults: PlayResult[] = [];
         let firstVideoIsPlaying = false;
@@ -214,7 +214,7 @@ export class Player {
 
             if (playNow && !firstVideoIsPlaying) {
                 firstVideoIsPlaying = true;
-                await this.playNow(songData, singleVideoData.blockedSegmentData.startSegmentEndTime);
+                await this.playNow(songData, singleVideoData.blockedSegmentData.startSegmentEndTime, volume);
             }
             else {
                 this.addToQueue(songData, forcePlayNext === true);
@@ -266,33 +266,27 @@ export class Player {
      * @param audioData Song data to be played.
      * @param startAtSeconds Start audio stream at specified starting point in seconds.
      */
-    private async playNow(audioData: AudioData, startAtSeconds = 0): Promise<void> {
+    private async playNow(audioData: AudioData, startAtSeconds = 0, volume = 100): Promise<void> {
         const transcodedStream = audioData.type == AudioType.Radio
             ? this._transcoder.getOpusRadioStream(audioData.radioStation)
-            : this._transcoder.transcodeToOpus(await StreamDownloader.getStream(audioData.videoId), audioData.filters, startAtSeconds);
+            : this._transcoder.transcodeToOpus(getStream(audioData.videoId), audioData.filters, startAtSeconds, volume);
 
         const resource = this.createOpusAudioResource(transcodedStream);
         this._audioPlayer!.play(resource);
         this._nowPlaying = audioData;
     }
 
-    /**
-     * Skips currently playing song.
-     */
+    /** Skips currently playing song. */
     public skip(): void {
         this._audioPlayer?.stop(true);
     }
 
-    /**
-     * Pauses currently playing song.
-     */
+    /** Pauses currently playing song. */
     public pause(): void {
         this._audioPlayer?.pause();
     }
 
-    /**
-     * Resumes previously paused song.
-     */
+    /** Resumes previously paused song. */
     public resume(): void {
         this._audioPlayer?.unpause();
     }
@@ -463,10 +457,11 @@ export class Player {
         });
         
         audioPlayer.on(AudioPlayerStatus.AutoPaused, () => {
-            Logger.logError("auto paused");
+            Logger.logDebug("Audio player is auto paused");
         });
+
         audioPlayer.on(AudioPlayerStatus.Buffering, () => {
-            Logger.logError("buffering");
+            Logger.logDebug("Audio player is buffering");
         });
         
         return audioPlayer;

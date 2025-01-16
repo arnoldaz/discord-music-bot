@@ -3,20 +3,20 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
 import { CommandInteraction } from "discord.js";
 
-export class SkipCommand extends BaseCommand {
+export class PauseCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 
     public constructor(player: Player) {
         super(player);
 
         this.data = new SlashCommandBuilder()
-            .setName("skip")
-            .setDescription("Skips current song");
+            .setName("pause")
+            .setDescription("Pauses current song");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
-        this._player.skip();
-        await interaction.editReply("Skipped current song.");
+        this._player.pause();
+        await interaction.editReply("Paused current song");
     }
 }

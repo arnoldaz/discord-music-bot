@@ -20,7 +20,7 @@ export class Logger {
     private static readonly logFolderPath = `${process.env.APPDATA}\\DiscordMusicBot`;
     private static readonly logFilePath = `${this.logFolderPath}\\music-bot-server.log`;
     
-    private static readonly logLevelString: { [_ in LogLevel]: string } = {
+    private static readonly logLevelString: Record<LogLevel, string> = {
         [LogLevel.Error]: "ERROR",
         [LogLevel.Warning]: "WARN",
         [LogLevel.Info]: "INFO",
@@ -28,7 +28,7 @@ export class Logger {
         [LogLevel.None]: "NONE",
     };
 
-    private static readonly logLevelColor: { [_ in LogLevel]: LogColor } = {
+    private static readonly logLevelColor: Record<LogLevel, LogColor> = {
         [LogLevel.Error]: LogColor.Red,
         [LogLevel.Warning]: LogColor.Yellow,
         [LogLevel.Info]: LogColor.None,

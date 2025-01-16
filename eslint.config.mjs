@@ -6,4 +6,9 @@ export default tseslint.config(
   tseslint.configs.recommended,
   tseslint.configs.strict,
   tseslint.configs.stylistic,
+  {
+    rules: {
+      "@typescript-eslint/no-non-null-assertion": "warn"
+    }
+  }
 );

@@ -24,11 +24,18 @@ export enum RadioStation {
     M1,
 }
 
+export interface TranscodeOptions {
+    filters?: AudioFilter[];
+    startAtSeconds?: number;
+    endAtSeconds?: number;
+    volume?: number;
+}
+
 /** Class for transcoding audio streams. */
 export class Transcoder {
 
     /** Implementations of audio filters as FFmpeg transcoder parameters. */
-    private static _availableAudioFilters: { [filter in AudioFilter]: string } = {
+    private static _availableAudioFilters: Record<AudioFilter, string> = {
         [AudioFilter.Nightcore]: "atempo=1.06,asetrate=48000*1.25",
         [AudioFilter.Earrape]: "channelsplit,sidechaingate=level_in=64",
         [AudioFilter.Audio8D]: "apulsator=hz=0.09",
@@ -38,13 +45,13 @@ export class Transcoder {
     };
 
     /** Available radio station urls. */
-    private static _availableRadioStations: { [station in RadioStation]: string } = {
+    private static _availableRadioStations: Record<RadioStation, string> = {
         [RadioStation.PowerHitRadio]: "https://powerhit.ls.lv/PHR_AAC",
         [RadioStation.M1]: "https://stream.m-1.fm/m1/aacp64",
     };
 
     /** Default args for FFmpeg transcoder. */
-    private static _defaultFFmpegArgs: string[] = [
+    private static _defaultFFmpegArgs = [
         "-analyzeduration", "0",
         "-loglevel", "0",
         "-f", "s16le",
@@ -59,7 +66,7 @@ export class Transcoder {
      * @param startAtSeconds Stream starting point defined in seconds. Defaults to 0 seconds.
      * @returns Transcoded stream.
      */
-    public transcodeToOpus(stream: Readable, filters?: AudioFilter[], startAtSeconds?: number): Readable {
+    public transcodeToOpus(stream: Readable, filters?: AudioFilter[], startAtSeconds?: number, volume?: number): Readable {
         const transcoderArgs = [...Transcoder._defaultFFmpegArgs];
         if (filters && filters.length > 0) {
             const filterString = filters.map(x => Transcoder._availableAudioFilters[x]).join(",");
@@ -73,7 +80,13 @@ export class Transcoder {
             Logger.logInfo(`Seeking to ${timeString} (${startAtSeconds} seconds).`);
             // transcoderArgs.push("-to", this.convertSecondsToTimeString(18)); // Doesn't work
         }
-        
+
+        if (volume && volume > 0 && volume != 100) {
+            const convertedVolume = (volume / 100).toPrecision(3);
+            transcoderArgs.push("-af", `volume=${convertedVolume}`);
+            Logger.logInfo(`Converting volume to ${convertedVolume}`);
+        }
+
         const transcoder = new FFmpeg({ args: transcoderArgs });
         const outputFfmpeg = stream.pipe(transcoder);
         
