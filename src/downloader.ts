@@ -1,7 +1,7 @@
 import { Readable } from "stream";
 import { spawn } from "child_process";
 import { dirname } from "path";
-import { Logger } from "./logger";
+import { log, LogLevel } from "./logger";
 
 export function getStream(videoId: string): Readable {
   Logger.logInfo(`Downloading stream from video ID: "${videoId}"`);

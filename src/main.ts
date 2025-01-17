@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { Logger } from "./logger";
+import { log, LogLevel, initializeLogger } from "./logger";
 import { DiscordClient } from "./client";
 import { Player } from "./player";
 import { registerCommands } from "./register";
@@ -20,11 +20,14 @@ import {
     PlayCustomCommand
 } from "./commands";
 import { SeekCommand } from "./commands/seek";
+import { PauseCommand } from "./commands/pause";
+import { ResumeCommand } from "./commands/resume";
 
 dotenv.config();
 
 (async () => {
-    Logger.logInfo(`${"=".repeat(25)} Starting Discord Music bot ${"=".repeat(25)}`);
+    initializeLogger();
+    log(`${"=".repeat(25)} Starting Discord Music bot ${"=".repeat(25)}`, LogLevel.Info);
     
     const transcoder = new Transcoder();
     const player = new Player(transcoder);
@@ -43,6 +46,8 @@ dotenv.config();
         new LyricsCommand(player),
         new SeekCommand(player),
         new PlayCustomCommand(player),
+        new PauseCommand(player),
+        new ResumeCommand(player),
     ];
 
     if (process.argv.slice(2).some(arg => arg.includes("register"))) {
@@ -51,5 +56,5 @@ dotenv.config();
     }
 
     const discordClient = new DiscordClient(supportedCommands);
-    discordClient.run().catch(error => Logger.logError(error));
+    discordClient.run().catch(error => log(error, LogLevel.Error));
 })();

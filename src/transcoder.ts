@@ -1,6 +1,6 @@
 import { opus as Opus, FFmpeg } from "prism-media";
 import { Readable } from "stream";
-import { Logger } from "./logger";
+import { log, LogLevel } from "./logger";
 
 /** Available stream audio filters. */
 export enum AudioFilter {
@@ -29,6 +29,94 @@ export interface TranscodeOptions {
     startAtSeconds?: number;
     endAtSeconds?: number;
     volume?: number;
+}
+
+const AUDIO_FILTER_IMPLEMENTATIONS: Record<AudioFilter, string> = {
+    [AudioFilter.Nightcore]: "atempo=1.06,asetrate=48000*1.25",
+    [AudioFilter.Earrape]: "channelsplit,sidechaingate=level_in=64",
+    [AudioFilter.Audio8D]: "apulsator=hz=0.09",
+    [AudioFilter.Chorus]: "chorus=0.7:0.9:55:0.4:0.25:2",
+    [AudioFilter.Chorus2d]: "chorus=0.6:0.9:50|60:0.4|0.32:0.25|0.4:2|1.3",
+    [AudioFilter.Chorus3d]: "chorus=0.5:0.9:50|60|40:0.4|0.32|0.3:0.25|0.4|0.3:2|2.3|1.3",
+};
+
+const DEFAULT_FFMPEG_ARGS = [
+    "-analyzeduration", "0",
+    "-loglevel", "0",
+    "-f", "s16le",
+    "-ar", "48000",
+    "-ac", "2",
+];
+
+export function transcodeToOpus(stream: Readable, options: TranscodeOptions): Readable {
+    const transcoderArgs = [...DEFAULT_FFMPEG_ARGS];
+
+    if (options.filters && options.filters.length > 0) {
+        const filterString = options.filters.map(x => AUDIO_FILTER_IMPLEMENTATIONS[x]).join(",");
+        log(`Adding filter string to FFMPEG args: ${filterString}`, LogLevel.Info);
+        transcoderArgs.push("-af", filterString);
+    }
+
+    if (options.startAtSeconds && options.startAtSeconds > 0) {
+        const timeString = convertSecondsToTimeString(options.startAtSeconds);
+        log(`Seeking to ${timeString} (${options.startAtSeconds} seconds).`, LogLevel.Info);
+        transcoderArgs.push("-ss", timeString);
+    }
+    
+    if (options.endAtSeconds && options.endAtSeconds > 0) {
+        const timeString = convertSecondsToTimeString(options.endAtSeconds);
+        log(`Seeking to ${timeString} (${options.startAtSeconds} seconds).`, LogLevel.Info);
+        transcoderArgs.push("-to", timeString);
+    }
+
+    if (options.volume && options.volume > 0 && options.volume != 100) {
+        const convertedVolume = (options.volume / 100).toPrecision(3);
+        log(`Converting volume to ${convertedVolume}`, LogLevel.Info);
+        transcoderArgs.push("-af", `volume=${convertedVolume}`);
+    }
+
+    const transcoder = new FFmpeg({ args: transcoderArgs });
+    const outputFfmpeg = stream.pipe(transcoder);
+    
+    const opusEncoder = getOpusEncoder();
+    const outputStream = outputFfmpeg.pipe(opusEncoder);
+
+    const cleanTranscoderResources = () => {
+        if (!transcoder.destroyed)
+            transcoder.destroy();
+        if (!opusEncoder.destroyed)
+            opusEncoder.destroy();
+        if (!stream.destroyed)
+            stream.destroy();
+    }
+
+    outputStream.on("close", cleanTranscoderResources);
+    outputStream.on("error", cleanTranscoderResources);
+
+    return outputStream;
+}
+
+/**
+ * Converts number of seconds to HH:MM:SS format.
+ * @param seconds Number of seconds.
+ * @returns Converted string.
+ */
+function convertSecondsToTimeString(seconds: number): string {
+    const date = new Date(0);
+    date.setSeconds(seconds);
+    return date.toISOString().substring(11, 19);
+}
+
+/**
+ * Creates Opus encoder object with predefined options.
+ * @returns New Opus encoder object.
+ */
+function getOpusEncoder(): Opus.Encoder {
+    return new Opus.Encoder({
+        rate: 48000,
+        channels: 2,
+        frameSize: 960,
+    });
 }
 
 /** Class for transcoding audio streams. */
@@ -71,20 +159,20 @@ export class Transcoder {
         if (filters && filters.length > 0) {
             const filterString = filters.map(x => Transcoder._availableAudioFilters[x]).join(",");
             transcoderArgs.push("-af", filterString);
-            Logger.logInfo(`Added filter string: ${filterString}`);
+            log(`Added filter string: ${filterString}`, LogLevel.Info);
         }
 
         if (startAtSeconds && startAtSeconds > 0) {
             const timeString = this.convertSecondsToTimeString(startAtSeconds);
             transcoderArgs.push("-ss", timeString);
-            Logger.logInfo(`Seeking to ${timeString} (${startAtSeconds} seconds).`);
+            log(`Seeking to ${timeString} (${startAtSeconds} seconds).`, LogLevel.Info);
             // transcoderArgs.push("-to", this.convertSecondsToTimeString(18)); // Doesn't work
         }
 
         if (volume && volume > 0 && volume != 100) {
             const convertedVolume = (volume / 100).toPrecision(3);
             transcoderArgs.push("-af", `volume=${convertedVolume}`);
-            Logger.logInfo(`Converting volume to ${convertedVolume}`);
+            log(`Converting volume to ${convertedVolume}`, LogLevel.Info);
         }
 
         const transcoder = new FFmpeg({ args: transcoderArgs });
@@ -92,23 +180,18 @@ export class Transcoder {
         
         const opusEncoder = this.getOpusEncoder();
         const outputStream = outputFfmpeg.pipe(opusEncoder);
-        outputStream.on("close", () => {
+
+        const cleanTranscoderResources = () => {
             if (!transcoder.destroyed)
                 transcoder.destroy();
             if (!opusEncoder.destroyed)
                 opusEncoder.destroy();
             if (!stream.destroyed)
                 stream.destroy();
-        });
-        outputStream.on("error", () => {
-            if (!transcoder.destroyed)
-                transcoder.destroy();
-            if (!opusEncoder.destroyed)
-                opusEncoder.destroy();
-            if (!stream.destroyed)
-                stream.destroy();
-            Logger.logError("bad thing")
-        });
+        }
+
+        outputStream.on("close", cleanTranscoderResources);
+        outputStream.on("error", cleanTranscoderResources);
 
         return outputStream;
     }
@@ -140,12 +223,12 @@ export class Transcoder {
         });
 
         const opusEncoder = this.getOpusEncoder();
-        Logger.logInfo(JSON.stringify(opusEncoder));
+        log(JSON.stringify(opusEncoder), LogLevel.Info);
 
         const outputStream = transcoder.pipe(opusEncoder);
-        Logger.logInfo(JSON.stringify(outputStream));
+        log(JSON.stringify(outputStream), LogLevel.Info);
         outputStream.on("close", () => {
-            Logger.logInfo("video close stream");
+            log("video close stream", LogLevel.Info);
             transcoder.destroy();
             opusEncoder.destroy();
         });

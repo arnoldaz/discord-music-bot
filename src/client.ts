@@ -1,6 +1,6 @@
 import { Client, Collection, Events, GatewayIntentBits, Interaction } from "discord.js";
 import { BaseCommand } from "./commands/baseCommand";
-import { Logger } from "./logger";
+import { log, LogLevel } from "./logger";
 
 /** Main Discord client class. */
 export class DiscordClient {
@@ -24,27 +24,27 @@ export class DiscordClient {
         );
 
         this._client.on(Events.ClientReady, () => {
-            Logger.logInfo("Bot is ready.");
+            log("Bot is ready", LogLevel.Info);
         });
 
         this._client.on(Events.InteractionCreate, async (interaction: Interaction) => {
             if (!interaction.isCommand()) {
-                Logger.logError("Interaction is not a command.");
+                log("Interaction is not a command", LogLevel.Error);
                 return;
             }
 
             const command = this._commandsMap.get(interaction.commandName);
             if (!command) {
-                Logger.logError(`Command "${interaction.commandName}" is not found.`);
+                log(`Command "${interaction.commandName}" is not found`, LogLevel.Error);
                 return;
             }
 
             try {
                 await command.execute(interaction);
             } catch (error) {
-                const errorString = `Command execution error: ${error}.`;
-                const callstack = error instanceof Error ? `\n${error.stack}` : "No error callstack found.";
-                Logger.logError(`${errorString} ${callstack}`);
+                const errorString = `Command execution error: ${error}`;
+                const callstack = error instanceof Error ? `\n${error.stack}` : "No error callstack found...";
+                log(`${errorString} ${callstack}`, LogLevel.Error);
 
                 if (interaction.replied || interaction.deferred)
                     await interaction.followUp({ content: errorString, ephemeral: true });
@@ -58,7 +58,7 @@ export class DiscordClient {
     public async run(): Promise<void> {
         const token = process.env.BOT_TOKEN;
         if (!token) {
-            Logger.logError("Bot token is not supplied.");
+            log("Bot token is not supplied", LogLevel.Error);
             return;
         }
 

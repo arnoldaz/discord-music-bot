@@ -1,22 +1,31 @@
 import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v9";
 import { BaseCommand } from "./commands/baseCommand";
-import { Logger } from "./logger";
+import { log, LogLevel } from "./logger";
 
 export async function registerCommands(commands: BaseCommand[], global = false) {
+    const botToken = process.env.BOT_TOKEN;
+    const clientId = process.env.CLIENT_ID;
+    const guildId = process.env.GUILD_ID;
+
+    if (!botToken || !clientId || !guildId) {
+        log("Command registering failed due to missing required environment variables", LogLevel.Error);
+        return;
+    }
+
     const commandsData = commands.map(command => command.data.toJSON());
-    const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN!);
+    const rest = new REST({ version: "10" }).setToken(botToken);
 
     try {
         await rest.put(
             global
-                ? Routes.applicationCommands(process.env.CLIENT_ID!)
-                : Routes.applicationGuildCommands(process.env.CLIENT_ID!, process.env.GUILD_ID!),
+                ? Routes.applicationCommands(clientId)
+                : Routes.applicationGuildCommands(clientId, guildId),
             { body: commandsData }
         );
 
-        Logger.logInfo(`Successfully registered ${global ? "global" : "server"} commands.`);
+        log(`Successfully registered ${global ? "global" : "server"} commands.`, LogLevel.Info);
     } catch (error) {
-        Logger.logInfo(`Command registering failed: ${error}`);
+        log(`Command registering failed: ${error}`, LogLevel.Error);
     }
 }

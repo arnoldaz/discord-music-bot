@@ -1,6 +1,6 @@
 import { Video, YouTube as YoutubeSearch } from "youtube-sr";
 import { Category, ResponseError, Segment, SponsorBlock } from "sponsorblock-api";
-import { Logger } from "./logger";
+import { log, LogLevel } from "./logger";
 
 export interface SearchData {
     id: string;
@@ -16,6 +16,25 @@ export interface BlockedSegmentData {
     endSegmentStartTime: number;
 }
 
+/**
+ * Searches YouTube with a query or direct URL to get relevant video data.
+ * @param query Query string or URL.
+ * @returns List of all search data if playlist, list with single video search data otherwise.
+ */
+export async function search(query: string): Promise<SearchData[]> {
+    const allVideoData = await getAllVideoData(query);
+
+    return await Promise.all(allVideoData.map(async videoData => {
+        return {
+            id: videoData.id ?? "",
+            title: videoData.title ?? "",
+            durationInSeconds: videoData.duration / 1000,
+            formattedDuration: videoData.durationFormatted,
+            thumbnailUrl: videoData.thumbnail?.displayThumbnailURL() ?? "",
+            blockedSegmentData: await getBlockedSegments(videoData.id, videoData.duration / 1000),
+        };
+    }));
+}
 
 /** Regex that matches direct playlist link. */
 const playlistRegex = /^https?:\/\/(www.)?youtube.com\/playlist\?list=((PL|FL|UU|LL|RD|OL)[a-zA-Z0-9-_]*)$/;
@@ -62,8 +81,8 @@ async function getAllVideoData(query: string): Promise<Video[]> {
         catch (error: unknown) {
             // youtube-sr does not support all types of playlists and some URLs that pass regex might fail.
             // In this case do not return anything and allow to handle it further.
-            Logger.logError(`youtube-sr failed to download playlist using URL '${query}', continuing with other options...`);
-            Logger.logError(`youtube-sr error: ${error}`);
+            log(`youtube-sr failed to download playlist using URL '${query}', continuing with other options...`, LogLevel.Error);
+            log(`youtube-sr error: ${error}`, LogLevel.Error);
         }
     }
 
@@ -86,15 +105,15 @@ async function getBlockedSegments(videoId: string, videoDurationInSeconds: numbe
     }
     catch (error: unknown) {
         if (error instanceof ResponseError && error.status == 404)
-            Logger.logInfo(`No SponsorBlock segments found for video: ${videoId}`);
+            log(`No SponsorBlock segments found for video: ${videoId}`, LogLevel.Info);
         else
-            Logger.logError(`SponsorBlock threw an error: ${error}`);
+            log(`SponsorBlock threw an error: ${error}`, LogLevel.Error);
     }
 
     const startSegment = segments.find(segment => segment.startTime < maxDeviation);
     const endSegment = segments.find(segment => segment.endTime > videoDurationInSeconds - maxDeviation);
 
-    Logger.logInfo(`SponsorBlock segments: start at "${JSON.stringify(startSegment)}", end at "${JSON.stringify(endSegment)}"`);
+    log(`SponsorBlock segments: start at "${JSON.stringify(startSegment)}", end at "${JSON.stringify(endSegment)}"`, LogLevel.Debug);
 
     return {
         startSegmentEndTime: startSegment?.endTime ?? 0,
@@ -102,22 +121,3 @@ async function getBlockedSegments(videoId: string, videoDurationInSeconds: numbe
     };
 }
 
-/**
- * Searches YouTube with a query or direct URL to get relevant video data.
- * @param query Query string or URL.
- * @returns List of all search data if playlist, list with single video search data otherwise.
- */
-export async function search(query: string): Promise<SearchData[]> {
-    const allVideoData = await getAllVideoData(query);
-
-    return await Promise.all(allVideoData.map(async videoData => {
-        return {
-            id: videoData.id ?? "",
-            title: videoData.title ?? "",
-            durationInSeconds: videoData.duration / 1000,
-            formattedDuration: videoData.durationFormatted,
-            thumbnailUrl: videoData.thumbnail?.displayThumbnailURL() ?? "",
-            blockedSegmentData: await getBlockedSegments(videoData.id!, videoData.duration / 1000),
-        };
-    }));
-}

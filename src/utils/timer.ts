@@ -1,4 +1,4 @@
-import { Logger } from '../logger';
+import { log, LogLevel } from "../logger";
 
 /** Seconds type for easier readability. */
 export type Seconds = number;
@@ -8,14 +8,12 @@ export class Timer {
     private _startTime = BigInt(0);
     private _isStarted = false;
 
-    /**
-     * Starts execution timer.
-     * Throws if previously started timer was not ended.
-     */
+    /** Starts execution timer. */
     public startTimer(): void {
-        if (this._isStarted)
-            Logger.logError("Timer is already started.");
-            // throw new Error("Timer is already started.");
+        if (this._isStarted) {
+            log("Timer programmer error: Timer is already started", LogLevel.Error);
+            return;
+        }
 
         this._startTime = process.hrtime.bigint();
         this._isStarted = true;
@@ -23,22 +21,20 @@ export class Timer {
 
     /**
      * Gets current execution time.
-     * Throws if timer was never started.
      * @returns Execution time in seconds.
      */
     public getTime(): Seconds {
-        if (!this._isStarted)
-            Logger.logError("Timer is not started.");
-            // throw new Error("Timer is not started.");
+        if (!this._isStarted) {
+            log("Timer programmer error: Timer is not started", LogLevel.Error);
+            return -1;
+        }
 
         const endTime = process.hrtime.bigint();
         const nanoSecondsPassed = endTime - this._startTime;
         return Number(nanoSecondsPassed / BigInt(1e9));
     }
 
-    /**
-     * Ends and resets previously started timer.
-     */
+    /** Ends and resets previously started timer. */
     public endTimer(): void {
         this._startTime = BigInt(0);
         this._isStarted = false;
