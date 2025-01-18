@@ -4,7 +4,7 @@ import { Player } from "../player";
 import { CommandInteraction, StageChannel, VoiceChannel, inlineCode, ChannelType } from "discord.js";
 
 export class JoinCommand extends BaseCommand {
-    private static _nameOption = "name";
+    private static nameOption = "name";
     public data: SlashCommandBuilder;
 
     public constructor(player: Player) {
@@ -14,13 +14,13 @@ export class JoinCommand extends BaseCommand {
             .setName("join")
             .setDescription("Joins voice channel");
         this.data.addStringOption(option => option
-            .setName(JoinCommand._nameOption)
+            .setName(JoinCommand.nameOption)
             .setDescription("Specific voice channel name")
         );
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
-        const channelName = (interaction.options.get(JoinCommand._nameOption)?.value as string)?.toLowerCase();
+        const channelName = (interaction.options.get(JoinCommand.nameOption)?.value as string)?.toLowerCase();
         const voiceChannel = channelName
             ? await this.getSpecifiedChannel(interaction, channelName)
             : await this.getUserChannel(interaction);

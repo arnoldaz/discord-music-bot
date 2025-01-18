@@ -3,21 +3,22 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
 import { CommandInteraction } from "discord.js";
 
-/** Clear command, which clears current player queue. */
-export class ClearCommand extends BaseCommand {
+export class ShutdownCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 
     public constructor(player: Player) {
         super(player);
 
         this.data = new SlashCommandBuilder()
-            .setName("clear")
-            .setDescription("Clears current queue");
+            .setName("shutdown")
+            .setDescription("Clears everything and shutdowns bot");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
         this._player.clearQueue();
-        await interaction.editReply("Queue cleared.");
+        this._player.skip();
+        this._player.disconnect();
+        await interaction.editReply("Shutting down...");
     }
 }

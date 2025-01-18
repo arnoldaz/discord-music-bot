@@ -1,6 +1,7 @@
 import { Client, Collection, Events, GatewayIntentBits, Interaction } from "discord.js";
 import { BaseCommand } from "./commands/baseCommand";
 import { log, LogLevel } from "./logger";
+import { ShutdownCommand } from "./commands/shutdown";
 
 /** Main Discord client class. */
 export class DiscordClient {
@@ -50,6 +51,11 @@ export class DiscordClient {
                     await interaction.followUp({ content: errorString, ephemeral: true });
                 else
                     await interaction.reply({ content: errorString, ephemeral: true });
+            }
+
+            if (command instanceof ShutdownCommand) {
+                log("Shutting down...", LogLevel.Info);
+                this._client.destroy();
             }
         });
     }

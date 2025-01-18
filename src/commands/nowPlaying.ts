@@ -1,7 +1,9 @@
 import { BaseCommand } from "./baseCommand";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { AudioType, Player } from "../player";
-import { CommandInteraction, inlineCode } from "discord.js";
+import { CommandInteraction, EmbedBuilder, inlineCode } from "discord.js";
+import { convertToTimeString } from "../timeFormat";
+import { log, LogLevel } from "../logger";
 
 export class NowPlayingCommand extends BaseCommand {
     public data: SlashCommandBuilder;
@@ -11,29 +13,30 @@ export class NowPlayingCommand extends BaseCommand {
 
         this.data = new SlashCommandBuilder()
             .setName("np")
-            .setDescription("Currently playing song.");
+            .setDescription("Displays currently playing song");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
-        const currentSong = this._player.currentlyPlaying;
+        const data = this._player.currentlyPlaying;
         const currentTime = this._player.currentTimer;
 
-        if (!currentSong || !currentTime) {
+        log(JSON.stringify(data), LogLevel.Warning);
+        log(JSON.stringify(currentTime), LogLevel.Warning);
+
+        if (!data || !currentTime) {
             await interaction.editReply("Nothing is currently playing.");
             return;
         }
 
-        const title = inlineCode(currentSong.title);
+        const embed = new EmbedBuilder()
+            .setTitle("Now playing")
+            .setDescription(inlineCode(data.title))
+            .addFields({ name: "Duration", value: convertToTimeString(currentTime, true) + " / " + convertToTimeString(data.durationInSeconds, true) })
 
-        const date = new Date(0);
-        date.setSeconds(currentTime);
-        const currentFormattedTime = date.toISOString().substring(11, 19);
+        if (data.type == AudioType.Song)
+            embed.setThumbnail(data.thumbnailUrl);
 
-        const totalFormattedTime = currentSong.type == AudioType.Song 
-            ? ` (${inlineCode(currentFormattedTime)} ${inlineCode(currentSong.formattedDuration)})` 
-            : "";
-
-        await interaction.editReply(`Currently playing: ${title}${totalFormattedTime}`);
+        await interaction.editReply({ embeds: [embed] });
     }
 }

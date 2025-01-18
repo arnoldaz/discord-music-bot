@@ -14,7 +14,7 @@ export class SeekCommand extends BaseCommand {
             .setDescription("Seeks");
         this.data.addIntegerOption(option => option
             .setName("seconds")
-            .setDescription("Seek to that second")
+            .setDescription("Seeks to that second")
             .setRequired(true)
         );
     }

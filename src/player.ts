@@ -4,7 +4,6 @@ import {
     AudioPlayerError,
     AudioPlayerState,
     AudioPlayerStatus,
-    AudioResource,
     createAudioPlayer,
     createAudioResource,
     DiscordGatewayAdapterCreator,
@@ -14,23 +13,21 @@ import {
     VoiceConnection,
     VoiceConnectionStatus,
 } from "@discordjs/voice";
-import { Logger } from "./logger";
-import { AudioFilter, RadioStation, Transcoder } from "./transcoder";
+import { log, LogLevel } from "./logger";
+import { AudioFilter, transcodeToOpus, getOpusStream } from "./transcoder";
 import { Readable } from "stream";
-import { ExtendedDataScraper } from "./scraper";
-import { LyricsScraper } from "./lyrics";
 import { search } from "./search";
 import { getStream } from "./downloader";
-import { Seconds, Timer } from "./utils/timer";
+import { Seconds, Timer } from "./timer";
 
 /** Supported player audio types. */
 export enum AudioType {
     Song,
-    Radio,
+    CustomAudio,
 }
 
 /** Supported player audio types combined interface. */
-export type AudioData = SongData | RadioData;
+export type AudioData = SongData | CustomAudioData;
 
 /**
  * Interface describing stored {@link Player} song data.
@@ -40,7 +37,6 @@ export interface SongData {
     videoId: string;
     title: string;
     durationInSeconds: number;
-    formattedDuration: string;
     thumbnailUrl: string;
     filters?: AudioFilter[];
 }
@@ -48,22 +44,21 @@ export interface SongData {
 /**
  * Interface describing stored {@link Player} radio station data.
  */
-export interface RadioData {
-    type: AudioType.Radio;
+export interface CustomAudioData {
+    type: AudioType.CustomAudio;
+    url: string;
     title: string;
-    radioStation: RadioStation;
-    filters?: AudioFilter[];
+    durationInSeconds: number;
 }
 
 /**
  * Interface describing {@link Player.play} method results.
  */
- export interface PlayResult {
+ export interface PlayQueryResult {
     videoId: string;
     isPlayingNow: boolean;
     title: string;
     durationInSeconds: number;
-    formattedDuration: string;
     thumbnailUrl: string;
 }
 
@@ -82,31 +77,12 @@ export class Player {
 
     private _timer = new Timer();
 
-    private static _radioStationNames: Record<RadioStation, string> = {
-        [RadioStation.PowerHitRadio]: "Power Hit Radio",
-        [RadioStation.M1]: "M-1",
-    };
-
-    public constructor(private _transcoder: Transcoder) {}
-
-    /**
-     * Gets dictionary of radio station display names.
-     */
-    public static get radioStationNames(): Record<RadioStation, string> {
-        return this._radioStationNames;
-    }
-
-    /** 
-     * Whether player is connected to voice channel.
-     */
+    /** Whether player is connected to voice channel. */
     public get isConnected(): boolean {
         return this._isConnected;
     }
 
-    /**
-     * Gets currently playing song data.
-     * Returns undefined if nothing is playing.
-     */
+    /** Gets currently playing audio data. */
     public get currentlyPlaying(): AudioData | undefined {
         if (!this._isPlaying)
             return undefined;
@@ -114,41 +90,17 @@ export class Player {
         return this._nowPlaying;
     }
 
-    /**
-     * Gets current song queue.
-     */
+    /** Gets current song queue. */
     public get queue(): AudioData[] {
         return this._queue;
     }
 
+    /** Gets timer for the currently playing song. */
     public get currentTimer(): Seconds | undefined {
         if (!this._isPlaying)
             return undefined;
         
         return this._timer.getTime();
-    }
-
-    public getQueueEndTime(): Seconds | undefined {
-        if (!this._isPlaying || !this._nowPlaying)
-            return undefined;
-
-        if (this._nowPlaying.type == AudioType.Radio)
-            return undefined;
-
-        const currentPlayingTime = this.currentTimer!;
-        const currentPlayingTotalTime = this._nowPlaying.durationInSeconds;
-
-        // Logger.logInfo(JSON.stringify(this._nowPlaying));
-
-        const queueTotalTime = this._queue.reduce((previousValue, currentValue) => {
-            const realCurrentValue = currentValue.type == AudioType.Song
-                ? currentValue.durationInSeconds
-                : Infinity;
-            
-            return previousValue + realCurrentValue;
-        }, 0);
-
-        return queueTotalTime + (currentPlayingTotalTime - currentPlayingTime);
     }
 
     /**
@@ -157,14 +109,14 @@ export class Player {
      */
     public async connect(voiceChannel: VoiceChannel | StageChannel): Promise<void> {
         if (this._isConnected && this._connectedChannel?.id == voiceChannel.id) {
-            Logger.logInfo(`Player is already connected to voice channel "${voiceChannel.name}".`);
+            log(`Player is already connected to voice channel '${voiceChannel.name}' and is trying to connect again`, LogLevel.Info);
             return;
         }
 
         if (!this._audioPlayer) {
-            Logger.logInfo("Creating audio player.");
+            log("Creating audio player", LogLevel.Info);
             this._audioPlayer = this.createAudioPlayer();
-            Logger.logInfo("Created audio player.");
+            log("Created audio player", LogLevel.Info);
         }
 
         this._connection = await this.joinChannel(voiceChannel);
@@ -173,12 +125,10 @@ export class Player {
         this._connectedChannel = voiceChannel;
     }
 
-    /**
-     * Destroys audio player voice channel connection.
-     */
+    /** Destroys audio player voice channel connection. */
     public disconnect(): void {
         if (!this._isConnected) {
-            Logger.logInfo("Player is not connected.");
+            log("Player is not connected while trying to disconnect", LogLevel.Info);
             return;
         }
 
@@ -189,16 +139,17 @@ export class Player {
     }
 
     /**
-     * Plays or queues song to audio player.
-     * @param query Song search query or direct url.
+     * Plays or queues song to audio player based on the YouTube search query.
+     * @param query Song search query or direct YouTube url.
      * @param filters List of filters to be applied to audio.
      * @param forcePlayNext Whether to force play song as the next in queue.
      * @returns A {@link PlayResult} object containing played or queued song information.
      */
-    public async play(query: string, filters?: AudioFilter[], forcePlayNext?: boolean, volume?: number): Promise<PlayResult[]> {
+    public async playQuery(query: string, filters?: AudioFilter[], forcePlayNext?: boolean, volume?: number): Promise<PlayQueryResult[]> {
         const searchData = await search(query);
-        const playNow = !this._isPlaying;
-        const playResults: PlayResult[] = [];
+        const playNow2 = !this._isPlaying;
+
+        const playResults: PlayQueryResult[] = [];
         let firstVideoIsPlaying = false;
 
         for (const singleVideoData of searchData) {
@@ -207,25 +158,23 @@ export class Player {
                 videoId: singleVideoData.id,
                 title: singleVideoData.title,
                 durationInSeconds: singleVideoData.durationInSeconds,
-                formattedDuration: singleVideoData.formattedDuration,
                 thumbnailUrl: singleVideoData.thumbnailUrl,
                 filters,
             };
 
-            if (playNow && !firstVideoIsPlaying) {
+            if (playNow2 && !firstVideoIsPlaying) {
                 firstVideoIsPlaying = true;
-                await this.playNow(songData, singleVideoData.blockedSegmentData.startSegmentEndTime, volume);
+                await this.playNow(songData, singleVideoData.blockedSegmentData.startSegmentEndTime, singleVideoData.blockedSegmentData.endSegmentStartTime, volume);
             }
             else {
-                this.addToQueue(songData, forcePlayNext === true);
+                this.addToQueue(songData, forcePlayNext);
             }
 
             playResults.push({
                 videoId: songData.videoId,
-                isPlayingNow: playNow,
+                isPlayingNow: playNow2,
                 title: songData.title,
                 durationInSeconds: songData.durationInSeconds,
-                formattedDuration: singleVideoData.formattedDuration,
                 thumbnailUrl: songData.thumbnailUrl,
             });
         }
@@ -233,47 +182,16 @@ export class Player {
         return playResults;
     }
 
-    public async playCustom(url: string): Promise<PlayResult> {
+    public async playCustom(url: string, title: string, durationInSeconds: number, forcePlayNext?: boolean, volume?: number): Promise<boolean> {
+        const customAudioData: CustomAudioData = { type: AudioType.CustomAudio, url, title, durationInSeconds };
         const playNow = !this._isPlaying;
 
-        const songData: SongData = {
-            type: AudioType.Song,
-            videoId: "",
-            title: "Pantheon zama",
-            durationInSeconds: 10,
-            formattedDuration: "No idea",
-            thumbnailUrl: "",
-        };
+        if (playNow)
+            await this.playNow(customAudioData, undefined, undefined, volume);
+        else
+            this.addToQueue(customAudioData, forcePlayNext);
 
-        const transcodedStream = this._transcoder.getOpusVideoStream(url);
-        const resource = this.createOpusAudioResource(transcodedStream);
-        this._audioPlayer!.play(resource);
-        this._nowPlaying = songData;
-
-        return {
-            videoId: songData.videoId,
-            isPlayingNow: playNow,
-            title: songData.title,
-            durationInSeconds: songData.durationInSeconds,
-            formattedDuration: songData.formattedDuration,
-            thumbnailUrl: songData.thumbnailUrl,
-        };
-    }
-
-    /**
-     * Force-plays song on audio player.
-     * {@link Player.connect} must be called beforehand to initialize audio player and setup connection.
-     * @param audioData Song data to be played.
-     * @param startAtSeconds Start audio stream at specified starting point in seconds.
-     */
-    private async playNow(audioData: AudioData, startAtSeconds = 0, volume = 100): Promise<void> {
-        const transcodedStream = audioData.type == AudioType.Radio
-            ? this._transcoder.getOpusRadioStream(audioData.radioStation)
-            : this._transcoder.transcodeToOpus(getStream(audioData.videoId), audioData.filters, startAtSeconds, volume);
-
-        const resource = this.createOpusAudioResource(transcodedStream);
-        this._audioPlayer!.play(resource);
-        this._nowPlaying = audioData;
+        return playNow;
     }
 
     /** Skips currently playing song. */
@@ -297,30 +215,28 @@ export class Player {
      * @returns False if nothing is currently playing, true otherwise.
      */
     public async seek(seconds: number): Promise<boolean> {
-        if (!this._isPlaying) {
-            Logger.logError("Nothing is currently playing to seek.");
+        if (!this._isPlaying || !this._nowPlaying) {
+            log("Nothing is currently playing to seek", LogLevel.Error);
             return false;
         }
 
         // Ends current song
         this._isPlaying = false;
         this._timer.endTimer();
-        
+
         // Restarts song from a new starting point.
-        await this.playNow(this._nowPlaying!, seconds);
+        await this.playNow(this._nowPlaying, seconds);
+        this._timer.setTimer(seconds);
+
         return true;
     }
 
-    /**
-     * Shuffles current song queue.
-     */
+    /** Shuffles current song queue. */
     public shuffleQueue(): void {
         this._queue.sort(() => Math.random() - 0.5);
     }
 
-    /**
-     * Clears current song queue.
-     */
+    /** Clears current song queue. */
     public clearQueue(): void {
         while (this._queue.length > 0)
             this._queue.pop();
@@ -338,43 +254,46 @@ export class Player {
         return this._queue.splice(index - 1, 1)[0];
     }
 
-    /**
-     * Plays or queues radio station to audio player.
-     * @param radioStation Radio station to play or queue.
-     */
-    public async playRadio(radioStation: RadioStation): Promise<void> {
-        const playNow = !this._isPlaying;
-        const radioData: RadioData = {
-            type: AudioType.Radio,
-            title: Player._radioStationNames[radioStation],
-            radioStation,
-        };
+    public getQueueEndTime(): Seconds | undefined {
+        if (!this._isPlaying || !this._nowPlaying)
+            return undefined;
 
-        if (playNow)
-            await this.playNow(radioData);
-        else
-            this.addToQueue(radioData);
+        const currentPlayingTime = this.currentTimer ?? 0;
+        const currentPlayingTotalTime = this._nowPlaying.durationInSeconds;
+
+        const queueTotalTime = this._queue.reduce((totalTime, queueSong) => totalTime + queueSong.durationInSeconds, 0);
+
+        return queueTotalTime + (currentPlayingTotalTime - currentPlayingTime);
     }
 
     /**
-     * Gets lyrics of currently playing song if they are available.
-     * @returns Lyrics as a string if they are available, undefined otherwise.
+     * Force-plays song on audio player.
+     * {@link Player.connect} must be called beforehand to initialize audio player and setup connection.
+     * @param audioData Song data to be played.
+     * @param startAtSeconds Start audio stream at specified starting point in seconds.
      */
-    public async getLyrics(): Promise<string | undefined> {
-        if (!this._isPlaying || !this._nowPlaying || this._nowPlaying.type == AudioType.Radio)
-            return undefined;
+    private async playNow(audioData: AudioData, startAtSeconds?: number, endAtSeconds?: number, volume?: number): Promise<void> {
+        let stream: Readable;
+        switch (audioData.type) {
+            case AudioType.Song:
+                stream = transcodeToOpus(getStream(audioData.videoId), { filters: audioData.filters, startAtSeconds, endAtSeconds, volume });
+                break
+            case AudioType.CustomAudio:
+                stream = getOpusStream(audioData.url);
+                break
+            default:
+                log("Trying to play unknown audio type", LogLevel.Error);
+                return;
+        }
 
-        const extendedData = await ExtendedDataScraper.getVideoData(this._nowPlaying.videoId);
-        Logger.logInfo(`Extended data found for "${this._nowPlaying.title}": ${JSON.stringify(extendedData.songMetadata)}`);
+        if (!this._audioPlayer) {
+            log("Trying to play song when audio player is not yet created", LogLevel.Error);
+            return;
+        }
 
-        const lyrics = await LyricsScraper.getLyrics(
-            this._nowPlaying.title,
-            extendedData.songMetadata?.artist,
-            extendedData.songMetadata?.song
-        );
-        Logger.logInfo(`Lyrics are ${lyrics ? `"${lyrics.substring(0, 30)}"` : "not found"}`);
-
-        return lyrics;
+        const resource = createAudioResource(stream, { inputType: StreamType.Opus })
+        this._audioPlayer.play(resource);
+        this._nowPlaying = audioData;
     }
 
     /**
@@ -391,7 +310,7 @@ export class Player {
 
     /**
      * Gets next song in the queue
-     * @returns 
+     * @returns TODO
      */
     private getNextSong(): AudioData | undefined {
         if (this._queue.length == 0)
@@ -406,7 +325,7 @@ export class Player {
      * @returns Created voice connection.
      */
     private async joinChannel(channel: VoiceChannel | StageChannel): Promise<VoiceConnection> {
-        Logger.logInfo(`Joining voice channel: ${channel.name}`);
+        log(`Joining voice channel: ${channel.name}`, LogLevel.Info);
 
         let connection = joinVoiceChannel({
             guildId: channel.guild.id,
@@ -417,7 +336,7 @@ export class Player {
         try {
             connection = await entersState(connection, VoiceConnectionStatus.Ready, 20000);
         } catch (error) {
-            Logger.logError(`Joining voice channel failed: ${error}`);
+            log(`Joining voice channel failed: ${error}`, LogLevel.Error);
             connection.destroy();
         }
 
@@ -432,11 +351,10 @@ export class Player {
         const audioPlayer = createAudioPlayer();
 
         audioPlayer.on(AudioPlayerStatus.Idle, async (oldState: AudioPlayerState) => {
-            if (oldState.status == AudioPlayerStatus.Buffering) {
-                Logger.logError("Buffering failed and audio player reset back to idle.");
-            }
+            if (oldState.status == AudioPlayerStatus.Buffering)
+                log("Buffering failed and audio player reset back to idle", LogLevel.Error);
 
-            Logger.logInfo("Audio player is idle.");
+            log("Audio player is idle", LogLevel.Info);
             this._isPlaying = false;
             this._timer.endTimer();
             this.skip();
@@ -447,32 +365,23 @@ export class Player {
         });
 
         audioPlayer.on(AudioPlayerStatus.Playing, () => {
-            Logger.logInfo("Audio player has started playing.");
             this._isPlaying = true;
             this._timer.startTimer();
+            log("Audio player has started playing", LogLevel.Info);
         });
 
         audioPlayer.on("error", (error: AudioPlayerError) => {
-            Logger.logError(`Error occured on audio player: "${error.message}" from resource "${JSON.stringify(error.resource.metadata)}"`);
+            log(`Error occured on audio player: "${error.message}" from resource "${JSON.stringify(error.resource.metadata)}"`, LogLevel.Error);
         });
         
         audioPlayer.on(AudioPlayerStatus.AutoPaused, () => {
-            Logger.logDebug("Audio player is auto paused");
+            log("Audio player is auto paused", LogLevel.Debug);
         });
 
         audioPlayer.on(AudioPlayerStatus.Buffering, () => {
-            Logger.logDebug("Audio player is buffering");
+            log("Audio player is buffering", LogLevel.Debug);
         });
         
         return audioPlayer;
-    }
-
-    /**
-     * Creates audio resource with Opus input type.
-     * @param stream Readable Opus audio stream to create audio resource from.
-     * @returns Created audio resource.
-     */
-    private createOpusAudioResource(stream: Readable): AudioResource<null> {
-        return createAudioResource(stream, { inputType: StreamType.Opus });
     }
 }

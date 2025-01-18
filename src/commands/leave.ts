@@ -11,7 +11,7 @@ export class LeaveCommand extends BaseCommand {
 
         this.data = new SlashCommandBuilder()
             .setName("leave")
-            .setDescription("Leave voice channel.");
+            .setDescription("Leaves voice channel");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {

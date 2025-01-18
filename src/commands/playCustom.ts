@@ -1,41 +1,91 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { CommandInteraction, inlineCode, EmbedBuilder } from "discord.js";
+import { CommandInteraction, inlineCode, EmbedBuilder, MessageFlags } from "discord.js";
 import { BaseCommand } from "./baseCommand";
-import { Player, PlayResult } from "../player";
+import { Player } from "../player";
+import { convertToTimeString, Seconds } from "../timeFormat";
+import { getCustomSongPath } from "../localFiles";
+
+enum CustomSong {
+    PantheonZama = 0,
+    ShrekIsLove = 1,
+}
+
+interface CustomSongData {
+    fileName: string;
+    title: string;
+    duration: Seconds;
+}
+
+const CUSTOM_SONG_DATA_MAP: Record<CustomSong, CustomSongData> = {
+    [CustomSong.PantheonZama]: {
+        fileName: "pantheon-zama.mp4",
+        title: "Pantheon zama",
+        duration: 63,
+    },
+    [CustomSong.ShrekIsLove]: {
+        fileName: "shrek-is-love-1.mp4",
+        title: "Shrek is love",
+        duration: 142,
+    },
+}
 
 export class PlayCustomCommand extends BaseCommand {
-    private static _urlOption = "url";
     public data: SlashCommandBuilder;
+    private static readonly customSong = "custom-song";
+    private static readonly forcePlayNextOption = "force-play-next";
+    private static readonly volumeOption = "volume";
+    private static readonly invisibleOption = "invisible";
 
     public constructor(player: Player) {
         super(player);
 
         this.data = new SlashCommandBuilder()
             .setName("playcustom")
-            .setDescription("Plays custom video URL");
-        this.data.addStringOption(option => option
-            .setName(PlayCustomCommand._urlOption)
-            .setDescription("Custom video URL")
-        );
+            .setDescription("Plays custom local song");
+        this.data.addIntegerOption(option => option
+            .setName(PlayCustomCommand.customSong)
+            .setDescription("Custom song")
+            .setRequired(true)
+            .addChoices(...[
+                CustomSong.PantheonZama,
+                CustomSong.ShrekIsLove,
+            ].map(filter => ({ name: CustomSong[filter], value: filter }))));
+        this.data.addBooleanOption(option => option
+            .setName(PlayCustomCommand.forcePlayNextOption)
+            .setDescription("Forces to play song as the first in the queue"));
+        this.data.addIntegerOption(option => option
+            .setName(PlayCustomCommand.volumeOption)
+            .setDescription("Modifies the volume of the song (default is 100)"));
+        this.data.addBooleanOption(option => option
+            .setName(PlayCustomCommand.invisibleOption)
+            .setDescription("Makes the bot reply with the song data invisible to other users"));
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {
         if (!await this.joinVoiceChannel(interaction))
             return;
 
-        await interaction.deferReply();
+        const customSong = interaction.options.get(PlayCustomCommand.customSong, true).value as CustomSong;
+        const forcePlayNext = interaction.options.get(PlayCustomCommand.forcePlayNextOption)?.value as boolean | undefined;
+        const volume = interaction.options.get(PlayCustomCommand.volumeOption)?.value as number | undefined;
+        const invisible = interaction.options.get(PlayCustomCommand.invisibleOption)?.value as boolean | undefined;
+        
+        await interaction.deferReply(invisible ? { flags: MessageFlags.Ephemeral } : {});
 
-        let url = interaction.options.get(PlayCustomCommand._urlOption)?.value as string | undefined;
-        if (!url)
-            url = "https://video.xx.fbcdn.net/v/t43.1792-2/12021243_1661321834110817_1226356561_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=985c63&efg=eyJybHIiOjE1MDAsInJsYSI6MTAyNCwidmVuY29kZV90YWciOiJoZCJ9&_nc_ohc=m07lDQypEUwAX8fTQV_&rl=1500&vabr=804&_nc_ht=video.fvno2-1.fna&oh=00_AfAsmDvrjH96tLUbFwfmQmyHUaaph7XgvfR-mxutxkATCw&oe=63CC3BFE";
+        const songData = CUSTOM_SONG_DATA_MAP[customSong];
 
-        const playData = await this._player.playCustom(url);
-        const data: PlayResult = playData;
+        const isPlayingNow = await this._player.playCustom(
+            getCustomSongPath(songData.fileName),
+            songData.title,
+            songData.duration,
+            forcePlayNext,
+            volume,
+        );
 
         const embed = new EmbedBuilder()
-            .setTitle(data.isPlayingNow ? "Now playing" : "Queued")
-            .setDescription(inlineCode(data.title))
-            .addFields({ name: "Duration", value: data.formattedDuration })
+            .setTitle(isPlayingNow ? "Now playing" : "Queued")
+            .setDescription(inlineCode(songData.title))
+            .addFields({ name: "Duration", value: convertToTimeString(songData.duration, true) })
 
         await interaction.editReply({ embeds: [embed] });
     }

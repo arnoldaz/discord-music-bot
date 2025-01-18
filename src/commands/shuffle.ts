@@ -11,7 +11,7 @@ export class ShuffleCommand extends BaseCommand {
 
         this.data = new SlashCommandBuilder()
             .setName("shuffle")
-            .setDescription("Shuffle queue.");
+            .setDescription("Shuffles queue");
     }
 
     public async execute(interaction: CommandInteraction): Promise<void> {

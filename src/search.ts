@@ -22,6 +22,7 @@ export interface BlockedSegmentData {
  * @returns List of all search data if playlist, list with single video search data otherwise.
  */
 export async function search(query: string): Promise<SearchData[]> {
+    log(`Searching for query '${query}'`, LogLevel.Info);
     const allVideoData = await getAllVideoData(query);
 
     return await Promise.all(allVideoData.map(async videoData => {
@@ -43,7 +44,7 @@ const playlistVideoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|y
 /** Regex that matches video link. */
 const videoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w-]+\?v=|embed\/|v\/)?)([\w-]+)(\S+)?$/;
 
-/** List of all Sponsor Block categories. */
+/** List of all Sponsor Block categories to block. */
 const allCategories: Category[] = ["sponsor", "intro", "outro", "interaction", "selfpromo", "music_offtopic", "preview"];
 /** Maximum deviation in seconds for Sponsor Block segments, since user submitted segments are not precise. */
 const maxDeviation = 2;
@@ -75,6 +76,7 @@ function isUrlVideo(url: string): boolean {
  */
 async function getAllVideoData(query: string): Promise<Video[]> {
     if (isUrlPlaylist(query)) {
+        log("Given query is detected to be a playlist", LogLevel.Info);
         try {
             return (await YoutubeSearch.getPlaylist(query, { limit: 50 })).videos;
         } 
@@ -86,9 +88,12 @@ async function getAllVideoData(query: string): Promise<Video[]> {
         }
     }
 
-    if (isUrlVideo(query))
+    if (isUrlVideo(query)) {
+        log("Given query is detected to be a single video", LogLevel.Info);
         return [await YoutubeSearch.getVideo(query)];
+    }
 
+    log("Given query is detected to be a custom query", LogLevel.Info);
     return [await YoutubeSearch.searchOne(query)];
 }
 
@@ -98,7 +103,12 @@ async function getAllVideoData(query: string): Promise<Video[]> {
  * @param videoDurationInSeconds Video duration in seconds.
  * @returns Start and end blocked segment data.
  */
-async function getBlockedSegments(videoId: string, videoDurationInSeconds: number): Promise<BlockedSegmentData> {
+async function getBlockedSegments(videoId?: string, videoDurationInSeconds?: number): Promise<BlockedSegmentData> {
+    if (!videoId || !videoDurationInSeconds) {
+        log(`Impossible to get blocked segments for video: ${videoId} (${videoDurationInSeconds})`, LogLevel.Error);
+        return { startSegmentEndTime: -1, endSegmentStartTime: -1 };
+    }
+
     let segments: Segment[] = [];
     try {
         segments = await sponsorBlockInstance.getSegments(videoId, allCategories);

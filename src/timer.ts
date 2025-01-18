@@ -1,4 +1,4 @@
-import { log, LogLevel } from "../logger";
+import { log, LogLevel } from "./logger";
 
 /** Seconds type for easier readability. */
 export type Seconds = number;
@@ -38,5 +38,10 @@ export class Timer {
     public endTimer(): void {
         this._startTime = BigInt(0);
         this._isStarted = false;
+    }
+
+    public setTimer(time: Seconds): void {
+        this._startTime = BigInt(time * 1e9);
+        this._isStarted = true;
     }
 }
