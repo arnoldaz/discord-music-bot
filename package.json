@@ -4,6 +4,7 @@
     "build": "tsc",
     "start": "node lib/main.js",
     "register": "node lib/main.js --register",
+    "unregister": "node lib/main.js --unregister",
     "lint": "eslint src/**",
     "lint-fix": "eslint src/** --fix",
     "download": "(if not exist bin mkdir bin) && curl -L -o bin/yt-dlp.exe https://github.com/yt-dlp/yt-dlp/releases/download/2025.01.12/yt-dlp.exe"

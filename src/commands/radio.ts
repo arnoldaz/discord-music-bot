@@ -7,7 +7,7 @@ import { getRadioStationName, getRadioStationUrl, RadioStation } from "../radio"
 export class RadioCommand extends BaseCommand {
     public data: SlashCommandBuilder;
     private static readonly stationOption = "station";
-    private static readonly forcePlayNextOption = "force-play-next";
+    private static readonly forcePlayNextOption = "force_play_next";
     private static readonly volumeOption = "volume";
     private static readonly invisibleOption = "invisible";
 

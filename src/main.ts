@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import { log, LogLevel, initializeLogger } from "./logger";
 import { DiscordClient } from "./client";
 import { Player } from "./player";
-import { registerCommands } from "./register";
+import { registerCommands, unregisterCommands } from "./register";
 
 import { SeekCommand } from "./commands/seek";
 import { PauseCommand } from "./commands/pause";
@@ -46,8 +46,13 @@ dotenv.config();
         new ShutdownCommand(player),
     ];
 
-    if (process.argv.slice(2).some(arg => arg.includes("register"))) {
+    if (process.argv.slice(2).some(arg => arg == "--register")) {
         await registerCommands(supportedCommands);
+        return;
+    }
+
+    if (process.argv.slice(2).some(arg => arg == "--unregister")) {
+        await unregisterCommands();
         return;
     }
 

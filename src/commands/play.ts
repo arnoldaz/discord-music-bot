@@ -10,7 +10,7 @@ export class PlayCommand extends BaseCommand {
     public data: SlashCommandBuilder;
     private static readonly queryOption = "query";
     private static readonly modificationOption = "modification";
-    private static readonly forcePlayNextOption = "force-play-next";
+    private static readonly forcePlayNextOption = "force_play_next";
     private static readonly volumeOption = "volume";
     private static readonly invisibleOption = "invisible";
 

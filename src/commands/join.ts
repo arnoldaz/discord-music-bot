@@ -4,7 +4,7 @@ import { Player } from "../player";
 import { CommandInteraction, StageChannel, VoiceChannel, inlineCode, ChannelType } from "discord.js";
 
 export class JoinCommand extends BaseCommand {
-    private static nameOption = "name";
+    private static readonly nameOption = "name";
     public data: SlashCommandBuilder;
 
     public constructor(player: Player) {

@@ -4,8 +4,8 @@ import { Player } from "../player";
 import { CommandInteraction, inlineCode } from "discord.js";
 
 export class RemoveCommand extends BaseCommand {
-    private static readonly idOption = "id";
     public data: SlashCommandBuilder;
+    private static readonly idOption = "id";
 
     public constructor(player: Player) {
         super(player);

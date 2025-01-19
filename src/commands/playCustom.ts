@@ -32,7 +32,7 @@ const CUSTOM_SONG_DATA_MAP: Record<CustomSong, CustomSongData> = {
 export class PlayCustomCommand extends BaseCommand {
     public data: SlashCommandBuilder;
     private static readonly customSong = "custom-song";
-    private static readonly forcePlayNextOption = "force-play-next";
+    private static readonly forcePlayNextOption = "force_play_next";
     private static readonly volumeOption = "volume";
     private static readonly invisibleOption = "invisible";
 
