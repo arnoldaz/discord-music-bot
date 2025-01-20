@@ -14,22 +14,18 @@ export function convertToTimeString(duration: Seconds, stripZeroes = false): str
     if (duration == Infinity)
         return Infinity.toString();
 
-    const dateISOString = new Date(duration * 1000).toISOString(); // "1970-01-01T00:00:00.000Z"
-    const timeString = dateISOString.substring(11, 19); // "00:00:00"
+    const hours = Math.floor(duration / 3600);
+    const minutes = Math.floor((duration % 3600) / 60);
+    const seconds = duration % 60;
+
+    const hoursString = hours > 0 ? `${hours}:` : "";
+    const minutesString = `${hours > 0 || minutes >= 10 ? minutes.toString().padStart(2, "0") : minutes}:`;
+    const secondsString = seconds.toString().padStart(2, "0");
+
+    const timeString = hoursString + minutesString + secondsString;
 
     if (!stripZeroes)
         return timeString;
 
-    // TODO: implement properly
-    return timeString;
-
-    let cutoffIndex = 0;
-    for (const char of timeString) {
-        if (char != "0" && char != ":")
-            break;
-
-        cutoffIndex++;
-    }
-
-    return timeString.substring(cutoffIndex);
+    return timeString.replace(/^0+:/, "").replace(/^0+/, "");
 }

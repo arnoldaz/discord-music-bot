@@ -58,7 +58,7 @@ export interface CustomAudioData {
     videoId: string;
     isPlayingNow: boolean;
     title: string;
-    durationInSeconds: number;
+    duration: number;
     thumbnailUrl: string;
 }
 
@@ -174,7 +174,7 @@ export class Player {
                 videoId: songData.videoId,
                 isPlayingNow: playNow2,
                 title: songData.title,
-                durationInSeconds: songData.durationInSeconds,
+                duration: songData.durationInSeconds,
                 thumbnailUrl: songData.thumbnailUrl,
             });
         }
@@ -252,6 +252,16 @@ export class Player {
             return undefined;
 
         return this._queue.splice(index - 1, 1)[0];
+    }
+
+    public getCurrentlyPlayingEndTime(): Seconds | undefined {
+        if (!this._isPlaying || !this._nowPlaying)
+            return undefined;
+
+        const currentPlayingTime = this.currentTimer ?? 0;
+        const currentPlayingTotalTime = this._nowPlaying.durationInSeconds;
+
+        return currentPlayingTotalTime - currentPlayingTime;
     }
 
     public getQueueEndTime(): Seconds | undefined {

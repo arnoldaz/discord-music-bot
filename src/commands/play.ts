@@ -59,42 +59,45 @@ export class PlayCommand extends BaseCommand {
         
         await interaction.deferReply(invisible ? { flags: MessageFlags.Ephemeral } : {});
 
-        log(JSON.stringify(modification), LogLevel.Warning);
-        log(JSON.stringify(modification ? [modification] : undefined), LogLevel.Warning);
-
         const playData = await this._player.playQuery(
             query,
             modification !== undefined ? [modification] : undefined,
             forcePlayNext,
             volume,
         );
-        const data = playData[0];
-
-        // log("test", LogLevel.Error);
-        // log(JSON.stringify(data), LogLevel.Error);
+        const firstSong = playData[0];
 
         const embed = new EmbedBuilder()
-            .setTitle(data.isPlayingNow ? "Now playing" : "Queued")
-            .setDescription(inlineCode(data.title))
-            .setThumbnail(data.thumbnailUrl)
-            .addFields({ name: "Duration", value: convertToTimeString(data.durationInSeconds, true) })
+            .setTitle(firstSong.isPlayingNow ? "Now playing" : "Queued")
+            .setDescription(inlineCode(firstSong.title))
+            .setThumbnail(firstSong.thumbnailUrl)
+            .addFields({ name: "Duration", value: convertToTimeString(firstSong.duration, true) })
 
-        if (!data.isPlayingNow) {
-            const queueEndTime = this._player.getQueueEndTime();
-
-            const date = new Date(0);
-            date.setSeconds(queueEndTime! - data.durationInSeconds);
-            const queueEndTimeFormatted = date.toISOString().substring(11, 19);
-
-            const date2 = new Date(0);
-            date2.setSeconds(queueEndTime!);
-            const queueEndTimeFormatted2 = date2.toISOString().substring(11, 19);
+        if (!firstSong.isPlayingNow) {
+            const queueEndTime = this._player.getQueueEndTime() ?? 0;
+            const timeUntilPlay = forcePlayNext
+                ? this._player.getCurrentlyPlayingEndTime() ?? 0
+                : queueEndTime - firstSong.duration
 
             embed.addFields(
-                { name: "Time until play", value: queueEndTimeFormatted, inline: true },
-                { name: "Time until queue end", value: queueEndTimeFormatted2, inline: true }
+                { name: "Time until play", value: convertToTimeString(timeUntilPlay, true), inline: true },
+                { name: "Time until queue end", value: convertToTimeString(queueEndTime, true), inline: true }
             );
         }
+
+        embed.addFields({ name: '\u200b', value: '\u200b' });
+
+        if (modification !== undefined)
+            embed.addFields({ name: "Modification", value: AudioFilter[modification], inline: true });
+
+        if (forcePlayNext !== undefined)
+            embed.addFields({ name: "Force play next", value: forcePlayNext.toString(), inline: true });
+
+        if (volume !== undefined)
+            embed.addFields({ name: "Volume", value: volume.toString(), inline: true });
+
+        if (invisible !== undefined)
+            embed.addFields({ name: "Invisible", value: invisible.toString(), inline: true });
 
         // Temp variable to add last "..." field once.
         let isEndFieldAdded = false;
