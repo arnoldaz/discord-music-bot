@@ -14,7 +14,7 @@ import {
     VoiceConnectionStatus,
 } from "@discordjs/voice";
 import { log, LogLevel } from "./logger";
-import { AudioFilter, transcodeToOpus, getOpusStream } from "./transcoder";
+import { AudioFilter, transcodeToOpus, getOpusStream, TranscodeOptions } from "./transcoder";
 import { Readable } from "stream";
 import { search } from "./search";
 import { getStream } from "./downloader";
@@ -36,9 +36,9 @@ export interface SongData {
     type: AudioType.Song;
     videoId: string;
     title: string;
-    durationInSeconds: number;
+    duration: Seconds;
     thumbnailUrl: string;
-    filters?: AudioFilter[];
+    transcodeOptions: TranscodeOptions;
 }
 
 /**
@@ -48,7 +48,8 @@ export interface CustomAudioData {
     type: AudioType.CustomAudio;
     url: string;
     title: string;
-    durationInSeconds: number;
+    duration: Seconds;
+    transcodeOptions: TranscodeOptions;
 }
 
 /**
@@ -58,7 +59,7 @@ export interface CustomAudioData {
     videoId: string;
     isPlayingNow: boolean;
     title: string;
-    duration: number;
+    duration: Seconds;
     thumbnailUrl: string;
 }
 
@@ -157,14 +158,19 @@ export class Player {
                 type: AudioType.Song,
                 videoId: singleVideoData.id,
                 title: singleVideoData.title,
-                durationInSeconds: singleVideoData.durationInSeconds,
+                duration: singleVideoData.duration,
                 thumbnailUrl: singleVideoData.thumbnailUrl,
-                filters,
+                transcodeOptions: {
+                    filters,
+                    startAtSeconds: singleVideoData.blockedSegmentData.startSegmentEndTime,
+                    endAtSeconds: singleVideoData.blockedSegmentData.endSegmentStartTime,
+                    volume,
+                },
             };
 
             if (playNow2 && !firstVideoIsPlaying) {
                 firstVideoIsPlaying = true;
-                await this.playNow(songData, singleVideoData.blockedSegmentData.startSegmentEndTime, singleVideoData.blockedSegmentData.endSegmentStartTime, volume);
+                await this.playNow(songData);
             }
             else {
                 this.addToQueue(songData, forcePlayNext);
@@ -174,7 +180,7 @@ export class Player {
                 videoId: songData.videoId,
                 isPlayingNow: playNow2,
                 title: songData.title,
-                duration: songData.durationInSeconds,
+                duration: songData.duration,
                 thumbnailUrl: songData.thumbnailUrl,
             });
         }
@@ -182,12 +188,12 @@ export class Player {
         return playResults;
     }
 
-    public async playCustom(url: string, title: string, durationInSeconds: number, forcePlayNext?: boolean, volume?: number): Promise<boolean> {
-        const customAudioData: CustomAudioData = { type: AudioType.CustomAudio, url, title, durationInSeconds };
+    public async playCustom(url: string, title: string, duration: number, forcePlayNext?: boolean, volume?: number): Promise<boolean> {
+        const customAudioData: CustomAudioData = { type: AudioType.CustomAudio, url, title, duration, transcodeOptions: { volume } };
         const playNow = !this._isPlaying;
 
         if (playNow)
-            await this.playNow(customAudioData, undefined, undefined, volume);
+            await this.playNow(customAudioData);
         else
             this.addToQueue(customAudioData, forcePlayNext);
 
@@ -225,7 +231,8 @@ export class Player {
         this._timer.endTimer();
 
         // Restarts song from a new starting point.
-        await this.playNow(this._nowPlaying, seconds);
+        this._nowPlaying.transcodeOptions.startAtSeconds = seconds;
+        await this.playNow(this._nowPlaying);
         this._timer.setTimer(seconds);
 
         return true;
@@ -259,7 +266,7 @@ export class Player {
             return undefined;
 
         const currentPlayingTime = this.currentTimer ?? 0;
-        const currentPlayingTotalTime = this._nowPlaying.durationInSeconds;
+        const currentPlayingTotalTime = this._nowPlaying.duration;
 
         return currentPlayingTotalTime - currentPlayingTime;
     }
@@ -269,9 +276,9 @@ export class Player {
             return undefined;
 
         const currentPlayingTime = this.currentTimer ?? 0;
-        const currentPlayingTotalTime = this._nowPlaying.durationInSeconds;
+        const currentPlayingTotalTime = this._nowPlaying.duration;
 
-        const queueTotalTime = this._queue.reduce((totalTime, queueSong) => totalTime + queueSong.durationInSeconds, 0);
+        const queueTotalTime = this._queue.reduce((totalTime, queueSong) => totalTime + queueSong.duration, 0);
 
         return queueTotalTime + (currentPlayingTotalTime - currentPlayingTime);
     }
@@ -282,11 +289,11 @@ export class Player {
      * @param audioData Song data to be played.
      * @param startAtSeconds Start audio stream at specified starting point in seconds.
      */
-    private async playNow(audioData: AudioData, startAtSeconds?: number, endAtSeconds?: number, volume?: number): Promise<void> {
+    private async playNow(audioData: AudioData): Promise<void> {
         let stream: Readable;
         switch (audioData.type) {
             case AudioType.Song:
-                stream = transcodeToOpus(getStream(audioData.videoId), { filters: audioData.filters, startAtSeconds, endAtSeconds, volume });
+                stream = transcodeToOpus(getStream(audioData.videoId), audioData.transcodeOptions);
                 break
             case AudioType.CustomAudio:
                 stream = getOpusStream(audioData.url);

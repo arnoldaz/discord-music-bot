@@ -4,7 +4,6 @@ import { BaseCommand } from "./baseCommand";
 import { Player } from "../player";
 import { AudioFilter } from "../transcoder";
 import { convertToTimeString } from "../timeFormat";
-import { log, LogLevel } from "../logger";
 
 export class PlayCommand extends BaseCommand {
     public data: SlashCommandBuilder;
@@ -59,13 +58,13 @@ export class PlayCommand extends BaseCommand {
         
         await interaction.deferReply(invisible ? { flags: MessageFlags.Ephemeral } : {});
 
-        const playData = await this._player.playQuery(
+        const playResult = await this._player.playQuery(
             query,
             modification !== undefined ? [modification] : undefined,
             forcePlayNext,
             volume,
         );
-        const firstSong = playData[0];
+        const firstSong = playResult[0];
 
         const embed = new EmbedBuilder()
             .setTitle(firstSong.isPlayingNow ? "Now playing" : "Queued")
@@ -85,26 +84,31 @@ export class PlayCommand extends BaseCommand {
             );
         }
 
-        embed.addFields({ name: '\u200b', value: '\u200b' });
+        // embed.addFields({ name: '\u200b', value: '\u200b' });
 
         if (modification !== undefined)
             embed.addFields({ name: "Modification", value: AudioFilter[modification], inline: true });
 
         if (forcePlayNext !== undefined)
-            embed.addFields({ name: "Force play next", value: forcePlayNext.toString(), inline: true });
+            embed.addFields({ name: "Force play next", value: forcePlayNext ? "Yes" : "No", inline: true });
 
         if (volume !== undefined)
             embed.addFields({ name: "Volume", value: volume.toString(), inline: true });
 
         if (invisible !== undefined)
-            embed.addFields({ name: "Invisible", value: invisible.toString(), inline: true });
+            embed.addFields({ name: "Invisible", value: invisible.toString() ? "Yes" : "No", inline: true });
+
+
+        // if (playData.length > 1) {
+        //     const maxQueueFields = 15;
+        // }
 
         // Temp variable to add last "..." field once.
         let isEndFieldAdded = false;
 
         // TODO: rework all this embed (also need splitting)
-        if (playData.length > 1) {
-            playData.forEach((singleVideoPlayData, index) => {
+        if (playResult.length > 1) {
+            playResult.forEach((singleVideoPlayData, index) => {
                 // Skip first for now as it's handled before.
                 if (index == 0)
                     return;
@@ -112,7 +116,7 @@ export class PlayCommand extends BaseCommand {
                 // Field limit is 25, since there are others, limit to 20 here.
                 if (index > 20) {
                     if (!isEndFieldAdded) {
-                        embed.addFields({ name: `And ${playData.length - 20} more songs`, value: "..." });
+                        embed.addFields({ name: `And ${playResult.length - 20} more songs`, value: "..." });
                         isEndFieldAdded = true;
                     }
 

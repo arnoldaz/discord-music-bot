@@ -1,19 +1,19 @@
 import { Video, YouTube as YoutubeSearch } from "youtube-sr";
 import { Category, ResponseError, Segment, SponsorBlock } from "sponsorblock-api";
 import { log, LogLevel } from "./logger";
+import { Seconds } from "./timer";
 
 export interface SearchData {
     id: string;
     title: string;
-    durationInSeconds: number;
-    formattedDuration: string;
+    duration: Seconds;
     thumbnailUrl: string;
     blockedSegmentData: BlockedSegmentData;
 }
 
 export interface BlockedSegmentData {
-    startSegmentEndTime: number;
-    endSegmentStartTime: number;
+    startSegmentEndTime: Seconds;
+    endSegmentStartTime: Seconds;
 }
 
 /**
@@ -29,8 +29,7 @@ export async function search(query: string): Promise<SearchData[]> {
         return {
             id: videoData.id ?? "",
             title: videoData.title ?? "",
-            durationInSeconds: videoData.duration / 1000,
-            formattedDuration: videoData.durationFormatted,
+            duration: videoData.duration / 1000,
             thumbnailUrl: videoData.thumbnail?.displayThumbnailURL() ?? "",
             blockedSegmentData: await getBlockedSegments(videoData.id, videoData.duration / 1000),
         };

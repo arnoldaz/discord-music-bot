@@ -45,32 +45,33 @@ export interface TranscodeOptions {
 
 export function transcodeToOpus(stream: Readable, options: TranscodeOptions): Readable {
     const transcoderArgs = [...DEFAULT_FFMPEG_ARGS];
+    log(`Transcoder options: ${JSON.stringify(options)}`, LogLevel.Debug);
 
     const filterArgs: string[] = [];
-    if (options.filters && options.filters.length > 0) {
+    if (options.filters !== undefined && options.filters.length > 0) {
         options.filters.forEach(x => filterArgs.push(AUDIO_FILTER_IMPLEMENTATIONS[x]));
         log(`Adding filters to FFMPEG args: ${options.filters}`, LogLevel.Info);
     }
 
-    if (options.startAtSeconds && options.startAtSeconds > 0) {
+    if (options.startAtSeconds !== undefined && options.startAtSeconds > 0) {
         const timeString = convertSecondsToTimeString(options.startAtSeconds);
         transcoderArgs.push("-ss", timeString);
         log(`Seeking to ${timeString} (${options.startAtSeconds} seconds).`, LogLevel.Info);
     }
     
-    if (options.endAtSeconds && options.endAtSeconds > 0) {
+    if (options.endAtSeconds !== undefined && options.endAtSeconds > 0) {
         const timeString = convertSecondsToTimeString(options.endAtSeconds);
         transcoderArgs.push("-to", timeString);
-        log(`Deleting from ${timeString} (${options.startAtSeconds} seconds).`, LogLevel.Info);
+        log(`Ending at ${timeString} (${options.endAtSeconds} seconds).`, LogLevel.Info);
     }
 
-    if (options.volume && options.volume > 0 && options.volume != 100) {
+    if (options.volume !== undefined && options.volume > 0 && options.volume != 100) {
         const convertedVolume = (options.volume / 100).toPrecision(3);
         filterArgs.push(`volume=${convertedVolume}`);
         log(`Converting volume to ${convertedVolume}`, LogLevel.Info);
     }
 
-    if (filterArgs)
+    if (filterArgs.length > 0)
         transcoderArgs.push("-af", filterArgs.join(","));
 
     log(`Full FFMPEG args: ${transcoderArgs}`, LogLevel.Info);

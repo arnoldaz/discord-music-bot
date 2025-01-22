@@ -19,7 +19,7 @@ export class QueueCommand extends BaseCommand {
         await interaction.deferReply();
 
         const queue = this._player.queue
-            .map((x, i) => `${i + 1}: ${inlineCode(x.title)}${x.type == AudioType.Song ? ` (${inlineCode(convertToTimeString(x.durationInSeconds))})` : ` (${inlineCode(convertToTimeString(x.durationInSeconds))})`}`)
+            .map((x, i) => `${i + 1}: ${inlineCode(x.title)}${x.type == AudioType.Song ? ` (${inlineCode(convertToTimeString(x.duration))})` : ` (${inlineCode(convertToTimeString(x.duration))})`}`)
             .join("\n");
 
         if (!queue) {
