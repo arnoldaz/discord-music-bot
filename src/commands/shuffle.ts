@@ -1,8 +1,11 @@
-import { BaseCommand } from "./baseCommand";
-import { SlashCommandBuilder } from "@discordjs/builders";
-import { Player } from "../player";
 import { CommandInteraction } from "discord.js";
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { BaseCommand } from "./baseCommand";
+import { Player } from "../player";
 
+/**
+ * Command to shuffle the current queue.
+ */
 export class ShuffleCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 

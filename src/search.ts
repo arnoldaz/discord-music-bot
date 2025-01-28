@@ -12,8 +12,8 @@ export interface SearchData {
 }
 
 export interface BlockedSegmentData {
-    startSegmentEndTime: Seconds;
-    endSegmentStartTime: Seconds;
+    startSegmentEndTime?: Seconds;
+    endSegmentStartTime?: Seconds;
 }
 
 /**
@@ -77,8 +77,8 @@ async function getAllVideoData(query: string): Promise<Video[]> {
     if (isUrlPlaylist(query)) {
         log("Given query is detected to be a playlist", LogLevel.Info);
         try {
-            return (await YoutubeSearch.getPlaylist(query, { limit: 50 })).videos;
-        } 
+            return (await YoutubeSearch.getPlaylist(query, { limit: 100 })).videos;
+        }
         catch (error: unknown) {
             // youtube-sr does not support all types of playlists and some URLs that pass regex might fail.
             // In this case do not return anything and allow to handle it further.
@@ -105,7 +105,7 @@ async function getAllVideoData(query: string): Promise<Video[]> {
 async function getBlockedSegments(videoId?: string, videoDurationInSeconds?: number): Promise<BlockedSegmentData> {
     if (!videoId || !videoDurationInSeconds) {
         log(`Impossible to get blocked segments for video: ${videoId} (${videoDurationInSeconds})`, LogLevel.Error);
-        return { startSegmentEndTime: -1, endSegmentStartTime: -1 };
+        return {};
     }
 
     let segments: Segment[] = [];
@@ -114,7 +114,7 @@ async function getBlockedSegments(videoId?: string, videoDurationInSeconds?: num
     }
     catch (error: unknown) {
         if (error instanceof ResponseError && error.status == 404)
-            log(`No SponsorBlock segments found for video: ${videoId}`, LogLevel.Info);
+            log(`No SponsorBlock segments found for video: ${videoId}`, LogLevel.Debug);
         else
             log(`SponsorBlock threw an error: ${error}`, LogLevel.Error);
     }

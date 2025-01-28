@@ -1,8 +1,11 @@
-import { BaseCommand } from "./baseCommand";
-import { SlashCommandBuilder } from "@discordjs/builders";
-import { Player } from "../player";
 import { CommandInteraction } from "discord.js";
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { BaseCommand } from "./baseCommand";
+import { Player } from "../player";
 
+/**
+ * Command to skip the currently playing song.
+ */
 export class SkipCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 

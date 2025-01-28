@@ -29,6 +29,9 @@ const CUSTOM_SONG_DATA_MAP: Record<CustomSong, CustomSongData> = {
     },
 }
 
+/**
+ * Command to play custom song out of predefined locally stored list of videos.
+ */
 export class PlayCustomCommand extends BaseCommand {
     public data: SlashCommandBuilder;
     private static readonly customSong = "custom-song";

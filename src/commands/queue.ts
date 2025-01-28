@@ -68,4 +68,16 @@ export class QueueCommand extends BaseCommand {
         }
         return messages.concat(msg).filter(m => m);
     }
+
+    // public static split(text: string, maxLength = 2_000) {
+    //     const splitText = text.split("\n");
+    //     const messages: string[] = [];
+    //     let tempMessage = "";
+    //     for (const chunk of splitText) {
+    //         let a = tempMessage + chunk;
+    //         if (a.length > maxLength) {
+
+    //         }
+    //     }
+    // }
 }

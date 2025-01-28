@@ -3,6 +3,9 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
 import { CommandInteraction, inlineCode } from "discord.js";
 
+/**
+ * Command to remove specific song from the queue.
+ */
 export class RemoveCommand extends BaseCommand {
     public data: SlashCommandBuilder;
     private static readonly idOption = "id";

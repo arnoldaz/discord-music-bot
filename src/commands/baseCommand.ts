@@ -2,16 +2,22 @@ import { CommandInteraction, GuildMember, StageChannel, VoiceChannel } from "dis
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
 
-/** Base user interaction command. */
+/**
+ * Base command for user slash command.
+ */
 export abstract class BaseCommand {
     public abstract data: SlashCommandBuilder;
 
     /**
-     * Execute current command.
+     * Executes the command.
      * @param interaction Command interaction.
      */
     public abstract execute(interaction: CommandInteraction): Promise<void>;
 
+    /**
+     * Base empty constructor.
+     * @param _player Shared player instance for list of commands.
+     */
     protected constructor(protected _player: Player) {}
 
     /**

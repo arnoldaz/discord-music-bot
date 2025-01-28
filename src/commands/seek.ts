@@ -3,6 +3,9 @@ import { CommandInteraction } from "discord.js";
 import { BaseCommand } from "./baseCommand";
 import { Player } from "../player";
 
+/**
+ * Command to seek the currently playing song to specific time.
+ */
 export class SeekCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 

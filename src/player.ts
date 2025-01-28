@@ -162,8 +162,8 @@ export class Player {
                 thumbnailUrl: singleVideoData.thumbnailUrl,
                 transcodeOptions: {
                     filters,
-                    startAtSeconds: singleVideoData.blockedSegmentData.startSegmentEndTime,
-                    endAtSeconds: singleVideoData.blockedSegmentData.endSegmentStartTime,
+                    startAtSeconds: singleVideoData.blockedSegmentData.startSegmentEndTime ?? -1,
+                    endAtSeconds: singleVideoData.blockedSegmentData.endSegmentStartTime ?? -1,
                     volume,
                 },
             };

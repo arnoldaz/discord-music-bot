@@ -1,8 +1,11 @@
-import { BaseCommand } from "./baseCommand";
-import { SlashCommandBuilder } from "@discordjs/builders";
-import { Player } from "../player";
 import { CommandInteraction, StageChannel, VoiceChannel, inlineCode, ChannelType } from "discord.js";
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { BaseCommand } from "./baseCommand";
+import { Player } from "../player";
 
+/**
+ * Command to join the bot to voice channel.
+ */
 export class JoinCommand extends BaseCommand {
     private static readonly nameOption = "name";
     public data: SlashCommandBuilder;

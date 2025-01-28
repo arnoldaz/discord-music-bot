@@ -3,6 +3,9 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 import { Player } from "../player";
 import { CommandInteraction } from "discord.js";
 
+/**
+ * Command to pause the current song.
+ */
 export class PauseCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 

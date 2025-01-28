@@ -5,6 +5,9 @@ import { Player } from "../player";
 import { AudioFilter } from "../transcoder";
 import { convertToTimeString } from "../timeFormat";
 
+/**
+ * Command to play or queue YouTube video (or playlist) either by direct link or search query.
+ */
 export class PlayCommand extends BaseCommand {
     public data: SlashCommandBuilder;
     private static readonly queryOption = "query";
@@ -84,8 +87,6 @@ export class PlayCommand extends BaseCommand {
             );
         }
 
-        // embed.addFields({ name: '\u200b', value: '\u200b' });
-
         if (modification !== undefined)
             embed.addFields({ name: "Modification", value: AudioFilter[modification], inline: true });
 
@@ -99,32 +100,19 @@ export class PlayCommand extends BaseCommand {
             embed.addFields({ name: "Invisible", value: invisible.toString() ? "Yes" : "No", inline: true });
 
 
-        // if (playData.length > 1) {
-        //     const maxQueueFields = 15;
-        // }
-
-        // Temp variable to add last "..." field once.
-        let isEndFieldAdded = false;
-
-        // TODO: rework all this embed (also need splitting)
         if (playResult.length > 1) {
-            playResult.forEach((singleVideoPlayData, index) => {
-                // Skip first for now as it's handled before.
-                if (index == 0)
-                    return;
+            const maxQueueFields = 15;
+            for (const [i, value] of playResult.entries()) {
+                if (i == 0)
+                    continue;
 
-                // Field limit is 25, since there are others, limit to 20 here.
-                if (index > 20) {
-                    if (!isEndFieldAdded) {
-                        embed.addFields({ name: `And ${playResult.length - 20} more songs`, value: "..." });
-                        isEndFieldAdded = true;
-                    }
-
-                    return;
+                if (i > maxQueueFields) {
+                    embed.addFields({ name: `And ${playResult.length - maxQueueFields} more songs`, value: "..." });
+                    break;
                 }
 
-                embed.addFields({ name: `Queued song from playlist ${index}`, value: singleVideoPlayData.title });
-            });
+                embed.addFields({ name: `Queued song from playlist ${i}`, value: value.title });
+            }
         }
 
         await interaction.editReply({ embeds: [embed] });

@@ -1,9 +1,11 @@
-import { BaseCommand } from "./baseCommand";
-import { SlashCommandBuilder } from "@discordjs/builders";
-import { Player } from "../player";
 import { CommandInteraction } from "discord.js";
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { BaseCommand } from "./baseCommand";
+import { Player } from "../player";
 
-/** Clear command, which clears current player queue. */
+/**
+ * Command to clear current player queue.
+ */
 export class ClearCommand extends BaseCommand {
     public data: SlashCommandBuilder;
 
