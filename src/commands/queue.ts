@@ -27,8 +27,7 @@ export class QueueCommand extends BaseCommand {
         const messagesText = this.splitIntoMessages(queue, 4000);
 
         let lastMessage = await interaction.editReply({ embeds: [{ title: "Current queue", description: messagesText[0] }] });
-        for (const messageText of messagesText.slice(1)) {
+        for (const messageText of messagesText.slice(1))
             lastMessage = await lastMessage.reply({ embeds: [{ description: messageText }] });
-        }
     }
 }

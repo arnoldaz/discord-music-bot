@@ -27,7 +27,7 @@ const CUSTOM_SONG_DATA_MAP: Record<CustomSong, CustomSongData> = {
         title: "Shrek is love",
         duration: 142,
     },
-}
+};
 
 /**
  * Command to play custom song out of predefined locally stored list of videos.

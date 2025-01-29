@@ -39,9 +39,8 @@ export class NowPlayingCommand extends BaseCommand {
             embed.setThumbnail(data.thumbnailUrl);
 
         if (data.transcodeOptions.filters && data.transcodeOptions.filters.length > 0) {
-            for (const modification in data.transcodeOptions.filters) {
+            for (const modification in data.transcodeOptions.filters)
                 embed.addFields({ name: "Modification", value: AudioFilter[modification], inline: true });
-            }
         }
 
         if (data.transcodeOptions.volume !== undefined)
