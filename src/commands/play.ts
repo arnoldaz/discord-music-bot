@@ -73,7 +73,7 @@ export class PlayCommand extends BaseCommand {
             .setTitle(firstSong.isPlayingNow ? "Now playing" : "Queued")
             .setDescription(inlineCode(firstSong.title))
             .setThumbnail(firstSong.thumbnailUrl)
-            .addFields({ name: "Duration", value: convertToTimeString(firstSong.duration, true) })
+            .addFields({ name: "Duration", value: convertToTimeString(firstSong.duration, true) });
 
         if (!firstSong.isPlayingNow) {
             const queueEndTime = this._player.getQueueEndTime() ?? 0;
@@ -87,20 +87,27 @@ export class PlayCommand extends BaseCommand {
             );
         }
 
-        if (modification !== undefined)
-            embed.addFields({ name: "Modification", value: AudioFilter[modification], inline: true });
+        if (modification !== undefined || forcePlayNext !== undefined || volume !== undefined || invisible !== undefined) {
+            let options = "";
+            if (modification !== undefined)
+                options += `Modification: ${inlineCode(AudioFilter[modification])}\n`;
+            
+            if (forcePlayNext !== undefined && forcePlayNext)
+                options += "Force play next\n";
+            
+            if (volume !== undefined)
+                options += `Volume: ${inlineCode(volume.toString())}\n`;
+    
+            if (invisible !== undefined && invisible)
+                options += "Invisible\n";
 
-        if (forcePlayNext !== undefined)
-            embed.addFields({ name: "Force play next", value: forcePlayNext ? "Yes" : "No", inline: true });
-
-        if (volume !== undefined)
-            embed.addFields({ name: "Volume", value: volume.toString(), inline: true });
-
-        if (invisible !== undefined)
-            embed.addFields({ name: "Invisible", value: invisible.toString() ? "Yes" : "No", inline: true });
-
+            embed.addFields({ name: "Additional options", value: options });
+        }
 
         if (playResult.length > 1) {
+            const totalDuration = playResult.reduce((totalTime, song) => totalTime + song.duration, 0);
+            embed.addFields({ name: "Total playlist duration", value: convertToTimeString(totalDuration, true) });
+
             const maxQueueFields = 15;
             for (const [i, value] of playResult.entries()) {
                 if (i == 0)

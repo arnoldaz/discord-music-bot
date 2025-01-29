@@ -125,8 +125,8 @@ async function getBlockedSegments(videoId?: string, videoDurationInSeconds?: num
     log(`SponsorBlock segments: start at "${JSON.stringify(startSegment)}", end at "${JSON.stringify(endSegment)}"`, LogLevel.Debug);
 
     return {
-        startSegmentEndTime: startSegment?.endTime ?? 0,
-        endSegmentStartTime: endSegment?.startTime ?? videoDurationInSeconds,
+        startSegmentEndTime: startSegment?.endTime,
+        endSegmentStartTime: endSegment?.startTime,
     };
 }
 

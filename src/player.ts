@@ -148,7 +148,7 @@ export class Player {
      */
     public async playQuery(query: string, filters?: AudioFilter[], forcePlayNext?: boolean, volume?: number): Promise<PlayQueryResult[]> {
         const searchData = await search(query);
-        const playNow2 = !this._isPlaying;
+        const shouldPlayNow = !this._isPlaying;
 
         const playResults: PlayQueryResult[] = [];
         let firstVideoIsPlaying = false;
@@ -168,7 +168,7 @@ export class Player {
                 },
             };
 
-            if (playNow2 && !firstVideoIsPlaying) {
+            if (shouldPlayNow && !firstVideoIsPlaying) {
                 firstVideoIsPlaying = true;
                 await this.playNow(songData);
             }
@@ -178,7 +178,7 @@ export class Player {
 
             playResults.push({
                 videoId: songData.videoId,
-                isPlayingNow: playNow2,
+                isPlayingNow: shouldPlayNow,
                 title: songData.title,
                 duration: songData.duration,
                 thumbnailUrl: songData.thumbnailUrl,

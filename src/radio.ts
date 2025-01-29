@@ -6,7 +6,7 @@ export enum RadioStation {
 
 /** Available radio station urls. */
 const RADIO_STATION_URLS: Record<RadioStation, string> = {
-    [RadioStation.PowerHitRadio]: "https://powerhit.ls.lv/PHR_AAC",
+    [RadioStation.PowerHitRadio]: "https://n39a-eu.rcs.revma.com/f31w7e0fveuvv?rj-ttl=5&rj-tok=AAABlK7OkwwAkUsgVE8VL2gdog",
     [RadioStation.M1]: "https://stream.m-1.fm/m1/aacp64",
 };
 

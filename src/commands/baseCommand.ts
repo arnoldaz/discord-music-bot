@@ -50,4 +50,26 @@ export abstract class BaseCommand {
         await this._player.connect(voiceChannel);
         return true;
     }
+
+    /**
+     * Splits lines to a list of messages based on their maximum length.
+     * @param lines Lines to combine together using end-line symbol and split into messages.
+     * @param maxMessageLength Max length that should not be passed when creating messages.
+     * @returns List of messages.
+     */
+    protected splitIntoMessages(lines: string[], maxMessageLength: number): string[] {
+        const messages: string[] = [];
+        let tempMessage = "";
+        for (const line of lines) {
+            const updatedMessage = tempMessage + line + "\n";
+            if (updatedMessage.length > maxMessageLength) {
+                messages.push(tempMessage);
+                tempMessage = line + "\n";
+                continue;
+            }
+            tempMessage = updatedMessage;
+        }
+    
+        return messages;
+    }
 }
