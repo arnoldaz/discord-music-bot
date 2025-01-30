@@ -20,6 +20,6 @@ export class ResumeCommand extends BaseCommand {
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
         this._player.resume();
-        await interaction.editReply("Resumed current song");
+        await interaction.editReply("Resumed current song.");
     }
 }

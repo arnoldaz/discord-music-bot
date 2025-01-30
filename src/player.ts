@@ -68,6 +68,7 @@ export interface CustomAudioData {
  */
 export class Player {
     private _isConnected = false;
+    private _isPaused = false;
     private _connectedChannel?: VoiceChannel | StageChannel;
     private _connection?: VoiceConnection;
     private _audioPlayer?: AudioPlayer;
@@ -78,9 +79,14 @@ export class Player {
 
     private _timer = new Timer();
 
-    /** Whether player is connected to voice channel. */
+    /** Gets whether the player is connected to voice channel. */
     public get isConnected(): boolean {
         return this._isConnected;
+    }
+
+    /** Gets whether the player is paused. */
+    public get isPaused(): boolean {
+        return this._isPaused;
     }
 
     /** Gets currently playing audio data. */
@@ -202,17 +208,28 @@ export class Player {
 
     /** Skips currently playing song. */
     public skip(): void {
+        this._isPaused = false;
         this._audioPlayer?.stop(true);
     }
 
     /** Pauses currently playing song. */
     public pause(): void {
-        this._audioPlayer?.pause();
-    }
+        if (this._isPaused)
+            return;
 
+        this._isPaused = true;
+        this._audioPlayer?.pause();
+        this._timer.pause();
+    }
+    
     /** Resumes previously paused song. */
     public resume(): void {
+        if (!this._isPaused)
+            return;
+        
+        this._isPaused = false;
         this._audioPlayer?.unpause();
+        this._timer.resume();
     }
 
     /**
@@ -228,12 +245,12 @@ export class Player {
 
         // Ends current song
         this._isPlaying = false;
-        this._timer.endTimer();
+        this._timer.end();
 
         // Restarts song from a new starting point.
         this._nowPlaying.transcodeOptions.startAtSeconds = seconds;
         await this.playNow(this._nowPlaying);
-        this._timer.setTimer(seconds);
+        this._timer.set(seconds);
 
         return true;
     }
@@ -373,7 +390,7 @@ export class Player {
 
             log("Audio player is idle", LogLevel.Info);
             this._isPlaying = false;
-            this._timer.endTimer();
+            this._timer.end();
             this.skip();
 
             const nextSong = this.getNextSong();
@@ -383,7 +400,7 @@ export class Player {
 
         audioPlayer.on(AudioPlayerStatus.Playing, () => {
             this._isPlaying = true;
-            this._timer.startTimer();
+            this._timer.start();
             log("Audio player has started playing", LogLevel.Info);
         });
 
@@ -397,6 +414,10 @@ export class Player {
 
         audioPlayer.on(AudioPlayerStatus.Buffering, () => {
             log("Audio player is buffering", LogLevel.Debug);
+        });
+
+        audioPlayer.on(AudioPlayerStatus.Paused, () => {
+            log("Audio player has been paused", LogLevel.Info);
         });
         
         return audioPlayer;

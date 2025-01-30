@@ -20,6 +20,6 @@ export class PauseCommand extends BaseCommand {
     public async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply();
         this._player.pause();
-        await interaction.editReply("Paused current song");
+        await interaction.editReply("Paused current song.");
     }
 }

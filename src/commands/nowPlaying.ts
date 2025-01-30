@@ -30,10 +30,14 @@ export class NowPlayingCommand extends BaseCommand {
             return;
         }
 
+        let duration = `${convertToTimeString(currentTime, true)} / ${convertToTimeString(data.duration, true)}`;
+        if (this._player.isPaused)
+            duration += " (paused)";
+
         const embed = new EmbedBuilder()
             .setTitle("Now playing")
             .setDescription(inlineCode(data.title))
-            .addFields({ name: "Duration", value: convertToTimeString(currentTime, true) + " / " + convertToTimeString(data.duration, true) });
+            .addFields({ name: "Duration", value: duration });
 
         if (data.type == AudioType.Song)
             embed.setThumbnail(data.thumbnailUrl);
