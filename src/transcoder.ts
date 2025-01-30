@@ -1,6 +1,7 @@
 import { opus as Opus, FFmpeg } from "prism-media";
 import { Readable } from "stream";
 import { log, LogLevel } from "./logger";
+import { convertToTimeString } from "./timeFormat";
 
 /** Available stream audio filters. */
 export enum AudioFilter {
@@ -43,6 +44,12 @@ export interface TranscodeOptions {
     volume?: number;
 }
 
+/**
+ * Transcodes readable stream to Opus through FFmpeg and applies additional arguments based on passed options.
+ * @param stream Readable stream.
+ * @param options Custom transcoding options for FFmpeg
+ * @returns Converted readable stream.
+ */
 export function transcodeToOpus(stream: Readable, options: TranscodeOptions): Readable {
     const transcoderArgs = [...DEFAULT_FFMPEG_ARGS];
     log(`Transcoder options: ${JSON.stringify(options)}`, LogLevel.Debug);
@@ -50,17 +57,17 @@ export function transcodeToOpus(stream: Readable, options: TranscodeOptions): Re
     const filterArgs: string[] = [];
     if (options.filters !== undefined && options.filters.length > 0) {
         options.filters.forEach(x => filterArgs.push(AUDIO_FILTER_IMPLEMENTATIONS[x]));
-        log(`Adding filters to FFMPEG args: ${options.filters}`, LogLevel.Info);
+        log(`Adding filters to FFmpeg args: ${options.filters}`, LogLevel.Info);
     }
 
     if (options.startAtSeconds !== undefined && options.startAtSeconds > 0) {
-        const timeString = convertSecondsToTimeString(options.startAtSeconds);
+        const timeString = convertToTimeString(options.startAtSeconds, false);
         transcoderArgs.push("-ss", timeString);
         log(`Seeking to ${timeString} (${options.startAtSeconds} seconds).`, LogLevel.Info);
     }
     
     if (options.endAtSeconds !== undefined && options.endAtSeconds > 0) {
-        const timeString = convertSecondsToTimeString(options.endAtSeconds);
+        const timeString = convertToTimeString(options.endAtSeconds, false);
         transcoderArgs.push("-to", timeString);
         log(`Ending at ${timeString} (${options.endAtSeconds} seconds).`, LogLevel.Info);
     }
@@ -74,7 +81,7 @@ export function transcodeToOpus(stream: Readable, options: TranscodeOptions): Re
     if (filterArgs.length > 0)
         transcoderArgs.push("-af", filterArgs.join(","));
 
-    log(`Full FFMPEG args: ${transcoderArgs}`, LogLevel.Info);
+    log(`Full FFmpeg args: ${transcoderArgs}`, LogLevel.Info);
 
     const transcoder = new FFmpeg({ args: transcoderArgs });
     const outputFfmpeg = stream.pipe(transcoder);
@@ -125,18 +132,6 @@ export function getOpusStream(url: string): Readable {
     outputStream.on("error", cleanTranscoderResources);
 
     return outputStream;
-}
-
-/**
- * Converts number of seconds to HH:MM:SS format.
- * @param seconds Number of seconds.
- * @returns Converted string.
- */
-function convertSecondsToTimeString(seconds: number): string {
-    const date = new Date(0);
-    date.setSeconds(seconds);
-    // "1970-01-01T00:00:00.000Z"
-    return date.toISOString().substring(11, 19);
 }
 
 /**

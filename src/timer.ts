@@ -1,10 +1,8 @@
 import { log, LogLevel } from "./logger";
-
-/** Seconds type for easier readability. */
-export type Seconds = number;
+import { Seconds } from "./timeFormat";
 
 /**
- * Simple class for counting time.
+ * Simple class for counting execution time.
  */
 export class Timer {
     private _startTime = BigInt(0);
@@ -14,9 +12,7 @@ export class Timer {
     private _isPaused = false;
     private _pausedElapsedTime = BigInt(0);
 
-    /**
-     * Starts execution timer.
-     */
+    /** Starts execution timer. */
     public start(): void {
         if (this._isStarted) {
             log("Timer is already started", LogLevel.Info);
@@ -58,11 +54,16 @@ export class Timer {
         this._isStarted = false;
     }
 
+    /**
+     * Force sets the start timer.
+     * @param time Time to set in seconds.
+     */
     public set(time: Seconds): void {
         this._startTime = BigInt(time * 1e9);
         this._isStarted = true;
     }
 
+    /** Pauses the started timer. */
     public pause(): void {
         if (this._isPaused) {
             log("Timer programmer error: Timer is already paused", LogLevel.Error);
@@ -73,12 +74,13 @@ export class Timer {
         this._isPaused = true;
     }
     
+    /** Resumes the paused timer. */
     public resume(): void {
         if (!this._isPaused) {
             log("Timer programmer error: Timer is not paused", LogLevel.Error);
             return;
         }
-        
+
         const resumeTime = process.hrtime.bigint();
         this._isPaused = false;
         this._pausedElapsedTime += resumeTime - this._pauseTime;

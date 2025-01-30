@@ -1,16 +1,13 @@
-
-
-
 /** Seconds type for easier readability. */
 export type Seconds = number;
 
-
 /**
- * Converts number of seconds to HH:MM:SS format.
+ * Converts number of seconds to HH:MM:SS format string.
  * @param seconds Number of seconds.
+ * @param 
  * @returns Converted string.
  */
-export function convertToTimeString(duration: Seconds, stripZeroes = false): string {
+export function convertToTimeString(duration: Seconds, stripZeroes = true): string {
     if (duration == Infinity)
         return Infinity.toString();
 

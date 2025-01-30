@@ -3,6 +3,11 @@ import { spawn } from "child_process";
 import { log, LogLevel } from "./logger";
 import { getBinaryPath } from "./localFiles";
 
+/**
+ * Gets readable audio stream for YouTube video based on the Id.
+ * @param videoId YouTube video Id (unique string at the end of the YouTube URL).
+ * @returns Readable stream.
+ */
 export function getStream(videoId: string): Readable {
     log(`Downloading stream from video ID: "${videoId}"`, LogLevel.Info);
     const stream = createYoutubeReadableStream(`https://www.youtube.com/watch?v=${videoId}`);
@@ -15,6 +20,11 @@ export function getStream(videoId: string): Readable {
     return stream;
 }
 
+/**
+ * Creates YouTube video readable stream using yt-dlp CLI tool in a separate process.
+ * @param videoUrl Full YouTube video URL.
+ * @returns Readable stream.
+ */
 function createYoutubeReadableStream(videoUrl: string): Readable {
     const youtubeDlPath = getBinaryPath("yt-dlp.exe");
     const youtubeDlProcess = spawn(youtubeDlPath, [

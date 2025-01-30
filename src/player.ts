@@ -18,7 +18,8 @@ import { AudioFilter, transcodeToOpus, getOpusStream, TranscodeOptions } from ".
 import { Readable } from "stream";
 import { search } from "./search";
 import { getStream } from "./downloader";
-import { Seconds, Timer } from "./timer";
+import { Timer } from "./timer";
+import { Seconds } from "./timeFormat";
 
 /** Supported player audio types. */
 export enum AudioType {
@@ -150,6 +151,7 @@ export class Player {
      * @param query Song search query or direct YouTube url.
      * @param filters List of filters to be applied to audio.
      * @param forcePlayNext Whether to force play song as the next in queue.
+     * @param volume Absolute volume for the song, where 100 is the default value.
      * @returns A {@link PlayResult} object containing played or queued song information.
      */
     public async playQuery(query: string, filters?: AudioFilter[], forcePlayNext?: boolean, volume?: number): Promise<PlayQueryResult[]> {
@@ -194,6 +196,15 @@ export class Player {
         return playResults;
     }
 
+    /**
+     * Plays or queues custom song from URL or local file path.
+     * @param url URL or local file path to custom audio.
+     * @param title Title to display when playing.
+     * @param duration Manually found location for the custom song.
+     * @param forcePlayNext Whether to force play song as the next in queue.
+     * @param volume Absolute volume for the song, where 100 is the default value.
+     * @returns True if it will be played instantly, false if queued.
+     */
     public async playCustom(url: string, title: string, duration: number, forcePlayNext?: boolean, volume?: number): Promise<boolean> {
         const customAudioData: CustomAudioData = { type: AudioType.CustomAudio, url, title, duration, transcodeOptions: { volume } };
         const playNow = !this._isPlaying;
@@ -278,6 +289,10 @@ export class Player {
         return this._queue.splice(index - 1, 1)[0];
     }
 
+    /**
+     * Gets time until the currently playing song ends.
+     * @returns Time in seconds or undefined if nothing is playing.
+     */
     public getCurrentlyPlayingEndTime(): Seconds | undefined {
         if (!this._isPlaying || !this._nowPlaying)
             return undefined;
@@ -288,6 +303,10 @@ export class Player {
         return currentPlayingTotalTime - currentPlayingTime;
     }
 
+    /**
+     * Gets time until the currently playing song and the rest of the queue ends.
+     * @returns Time in seconds or undefined if nothing is playing.
+     */
     public getQueueEndTime(): Seconds | undefined {
         if (!this._isPlaying || !this._nowPlaying)
             return undefined;
@@ -343,8 +362,8 @@ export class Player {
     }
 
     /**
-     * Gets next song in the queue
-     * @returns TODO
+     * Gets next song in the queue.
+     * @returns Audio data for the song or undefined if queue is empty.
      */
     private getNextSong(): AudioData | undefined {
         if (this._queue.length == 0)

@@ -1,7 +1,7 @@
 import { Video, YouTube as YoutubeSearch } from "youtube-sr";
 import { Category, ResponseError, Segment, SponsorBlock } from "sponsorblock-api";
 import { log, LogLevel } from "./logger";
-import { Seconds } from "./timer";
+import { Seconds } from "./timeFormat";
 
 export interface SearchData {
     id: string;

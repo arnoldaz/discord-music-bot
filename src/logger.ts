@@ -8,7 +8,12 @@ export enum LogLevel {
     None = 100,
 }
 
-export function log(message: string, level: LogLevel) {
+/**
+ * Logs message to console and log file if log level passes global log level check.
+ * @param message Message to log.
+ * @param level Log level.
+ */
+export function log(message: string, level: LogLevel): void {
     if (GLOBAL_LOG_LEVEL < level)
         return
 
