@@ -7,19 +7,25 @@ import { Seconds } from "./timeFormat";
 export class Timer {
     private _startTime = BigInt(0);
     private _isStarted = false;
+    private _extraElapsedTime = BigInt(0);
 
     private _pauseTime = BigInt(0);
     private _isPaused = false;
     private _pausedElapsedTime = BigInt(0);
 
-    /** Starts execution timer. */
-    public start(): void {
+    /**
+     * Starts execution timer.
+     * @param startTimer 
+     * @returns 
+     */
+    public start(startTimer?: Seconds): void {
         if (this._isStarted) {
             log("Timer is already started", LogLevel.Info);
             return;
         }
 
         this._startTime = process.hrtime.bigint();
+        this._extraElapsedTime = startTimer !== undefined ? BigInt(startTimer * 1e9) : BigInt(0);
         this._isStarted = true;
         this._isPaused = false;
         this._pausedElapsedTime = BigInt(0);
@@ -37,9 +43,9 @@ export class Timer {
 
         const endTime = this._isPaused
             ? this._pauseTime
-            : process.hrtime.bigint()
+            : process.hrtime.bigint();
 
-        const nanoSecondsPassed = endTime - this._startTime - this._pausedElapsedTime;
+        const nanoSecondsPassed = endTime - this._startTime - this._pausedElapsedTime + this._extraElapsedTime;
         return Number(nanoSecondsPassed / BigInt(1e9));
     }
 
@@ -52,15 +58,6 @@ export class Timer {
 
         this._startTime = BigInt(0);
         this._isStarted = false;
-    }
-
-    /**
-     * Force sets the start timer.
-     * @param time Time to set in seconds.
-     */
-    public set(time: Seconds): void {
-        this._startTime = BigInt(time * 1e9);
-        this._isStarted = true;
     }
 
     /** Pauses the started timer. */

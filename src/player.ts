@@ -248,7 +248,7 @@ export class Player {
      * @param seconds Seconds from song starting point to seek to.
      * @returns False if nothing is currently playing, true otherwise.
      */
-    public async seek(seconds: number): Promise<boolean> {
+    public async seek(seconds: Seconds): Promise<boolean> {
         if (!this._isPlaying || !this._nowPlaying) {
             log("Nothing is currently playing to seek", LogLevel.Error);
             return false;
@@ -261,7 +261,7 @@ export class Player {
         // Restarts song from a new starting point.
         this._nowPlaying.transcodeOptions.startAtSeconds = seconds;
         await this.playNow(this._nowPlaying);
-        this._timer.set(seconds);
+        this._timer.start(seconds);
 
         return true;
     }
