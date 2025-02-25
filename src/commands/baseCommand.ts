@@ -69,7 +69,9 @@ export abstract class BaseCommand {
             }
             tempMessage = updatedMessage;
         }
-    
+
+        messages.push(tempMessage);
+
         return messages;
     }
 }
