@@ -30,6 +30,7 @@ function createYoutubeReadableStream(videoUrl: string): Readable {
     const youtubeDlProcess = spawn(youtubeDlPath, [
         videoUrl,
         "--format", "bestaudio",
+        "--cookies", getBinaryPath("cookies.txt"),
         "-o", "-", // Output to stdout
     ]);
 
