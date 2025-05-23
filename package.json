@@ -7,7 +7,7 @@
     "unregister": "node lib/main.js --unregister",
     "lint": "eslint src/**",
     "lint-fix": "eslint src/** --fix",
-    "download": "(if not exist bin mkdir bin) && curl -L -o bin\\yt-dlp.exe https://github.com/yt-dlp/yt-dlp/releases/download/2025.03.26/yt-dlp.exe",
+    "download": "(if not exist bin mkdir bin) && curl -L -o bin\\yt-dlp.exe https://github.com/yt-dlp/yt-dlp/releases/download/2025.05.22/yt-dlp.exe",
     "cookies": "(if not exist bin mkdir bin) && bin\\yt-dlp.exe --cookies-from-browser firefox --cookies bin\\cookies.txt"
   },
   "dependencies": {
